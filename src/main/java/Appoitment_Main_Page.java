@@ -11,6 +11,7 @@ public class Appoitment_Main_Page {
 			adminLogin(input);
 			
 		}
+		
 		input.close();
 	}
 	//Menu Function
