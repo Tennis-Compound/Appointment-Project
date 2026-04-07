@@ -104,7 +104,8 @@ public class Appoitment_Main_Page {
 	
 	private static void adminLogin(Scanner input) {
 		Dotenv dotenv = Dotenv.configure()
-		        .directory("C:\\Users\\User\\Downloads\\SoftHW\\Appointment-Project")
+		        .directory("C:\\\\Programming\\\\JAVA\\\\maven")
+				//.directory("C:\\Users\\User\\Downloads\\SoftHW\\Appointment-Project")
 		        .load();
 		
 		String adminUsername = dotenv.get("adminName");

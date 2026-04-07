@@ -1,3 +1,4 @@
+import io.github.cdimascio.dotenv.Dotenv;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -5,14 +6,19 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 	private static Connection connection = null;
 	
-	private static final String DB_URL = "jdbc:postgresql://localhost:5432/appointment_db";
-	private static final String DB_USER = "your_db_username";
-	private static final String DB_PASSWORD = "your_db_password";
+	
 	
 	public static Connection getConnection() {
 		if(connection == null) {
 			try {
-				connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+				Dotenv dotenv = Dotenv.configure()
+						.directory("C:\\Programming\\JAVA\\maven")
+						.load();
+				String url = dotenv.get("DB_URL");
+				String user = dotenv.get("DB_USER");
+				String password = dotenv.get("DB_PASSWORD");
+				
+				connection = DriverManager.getConnection(url, user, password);
 				System.out.println("Connected to database successfully");
 			} catch (SQLException e) {
 				System.out.println("Database connection failed: " + e.getMessage());
