@@ -8,15 +8,13 @@ public class Appoitment_Main_Page {
 	private static int loggedInUserId = -1;
 	private static String loggedInUserName = "";
 	
-	// Real notification system
 	private static NotificationManager notificationManager;
-	private static boolean useMockNotifications = false;  // Set to false for real emails
+	private static boolean useMockNotifications = false;
 	
 	public static void main(String[] args) {
 		
 		System.out.println("Welcome to Appointment Scheduling System");
 		
-		// Initialize real notification service
 		initializeNotificationService();
 		
 		Scanner input = new Scanner(System.in);
@@ -62,7 +60,7 @@ public class Appoitment_Main_Page {
 		} else {
 			try {
 				Dotenv dotenv = Dotenv.configure()
-						.directory("C:\\Users\\User\\Downloads\\SoftHW\\Appointment-Project")
+						.directory(".")
 						.load();
 				
 				String smtpHost = dotenv.get("SMTP_HOST");
@@ -104,8 +102,7 @@ public class Appoitment_Main_Page {
 	
 	private static void adminLogin(Scanner input) {
 		Dotenv dotenv = Dotenv.configure()
-		        .directory("C:\\\\Programming\\\\JAVA\\\\maven")
-				//.directory("C:\\Users\\User\\Downloads\\SoftHW\\Appointment-Project")
+				.directory(".")
 		        .load();
 		
 		String adminUsername = dotenv.get("adminName");
@@ -120,7 +117,7 @@ public class Appoitment_Main_Page {
         if(username.equals(adminUsername) && password.equals(adminPassword)) {
         	System.out.println("Login Successful");
         	isLoggedIn = true;
-        }else {
+        } else {
         	System.out.println("Invalid Credentials");
         }
 	}
@@ -187,7 +184,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-				"SELECT a.appointment_id, u.name AS user_name, u.email, " +
+				"SELECT a.appointment_id, a.appointment_type, u.name AS user_name, u.email, " +
 				"t.start_datetime, t.end_datetime " +
 				"FROM \"Appointment\" a " +
 				"JOIN \"Users\" u ON a.user_id = u.user_id " +
@@ -202,6 +199,7 @@ public class Appoitment_Main_Page {
 				found = true;
 				System.out.println(
 					"Appointment ID: " + rs.getInt("appointment_id") +
+					" | Type: " + rs.getString("appointment_type") +
 					" | User: " + rs.getString("user_name") +
 					" | Email: " + rs.getString("email") +
 					" | Start: " + rs.getTimestamp("start_datetime") +
@@ -275,7 +273,6 @@ public class Appoitment_Main_Page {
 										   "\nDate: " + startTime +
 										   "\nTime: " + startTime + " - " + endTime;
 				
-				// Send real email notification
 				notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
 				notificationManager.cancelReminder(appointmentId);
 				
@@ -394,7 +391,6 @@ public class Appoitment_Main_Page {
 			String oldDetails = "Date: " + oldStartTime + "\nTime: " + oldStartTime + " - " + oldEndTime;
 			String newDetails = "Date: " + newStartTime + "\nTime: " + newStartTime + " - " + newEndTime;
 			
-			// Send real email notification
 			notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
 			notificationManager.cancelReminder(appointmentId);
 			
@@ -422,7 +418,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-					"SELECT * FROM \"Users\" WHERE name = ARRAY[?] AND password = ARRAY[?]"
+					"SELECT * FROM \"Users\" WHERE name = ? AND password = ?"
 			);
 			stmt.setString(1, username);
 			stmt.setString(2, password);
@@ -462,7 +458,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-					"INSERT INTO \"Users\" (name, email, password) VALUES (ARRAY[?], ARRAY[?], ARRAY[?]);"
+					"INSERT INTO \"Users\" (name, email, password) VALUES (?, ?, ?)"
 			);
 			stmt.setString(1, username);
 			stmt.setString(2, userEmail);
@@ -498,7 +494,7 @@ public class Appoitment_Main_Page {
 					viewAvailableSlots();
 					break;
 				case 2:
-					System.out.println("add");
+					showBookingRules();
 					break;
 				case 3:
 					bookAppointment(input);
@@ -518,6 +514,17 @@ public class Appoitment_Main_Page {
 					System.out.println("Invalid option.");
 			}
 		}
+	}
+	
+	private static void showBookingRules() {
+		System.out.println("\nBooking Rules by Appointment Type:");
+		System.out.println("URGENT      -> duration must be 30 minutes or less");
+		System.out.println("FOLLOW_UP   -> duration must be 30 minutes or less");
+		System.out.println("ASSESSMENT  -> duration must be at least 60 minutes");
+		System.out.println("VIRTUAL     -> no physical location is required");
+		System.out.println("IN_PERSON   -> physical location is required");
+		System.out.println("INDIVIDUAL  -> participant count must be exactly 1");
+		System.out.println("GROUP       -> participant count must be more than 1");
 	}
 	
 	private static void viewAvailableSlots() {
@@ -560,6 +567,71 @@ public class Appoitment_Main_Page {
 		int slotID = input.nextInt();
 		input.nextLine();
 		
+		System.out.println("Choose appointment type:");
+		System.out.println("1- URGENT");
+		System.out.println("2- FOLLOW_UP");
+		System.out.println("3- ASSESSMENT");
+		System.out.println("4- VIRTUAL");
+		System.out.println("5- IN_PERSON");
+		System.out.println("6- INDIVIDUAL");
+		System.out.println("7- GROUP");
+		
+		int typeChoice = input.nextInt();
+		input.nextLine();
+		
+		String appointmentType;
+		
+		switch (typeChoice) {
+			case 1:
+				appointmentType = "URGENT";
+				break;
+			case 2:
+				appointmentType = "FOLLOW_UP";
+				break;
+			case 3:
+				appointmentType = "ASSESSMENT";
+				break;
+			case 4:
+				appointmentType = "VIRTUAL";
+				break;
+			case 5:
+				appointmentType = "IN_PERSON";
+				break;
+			case 6:
+				appointmentType = "INDIVIDUAL";
+				break;
+			case 7:
+				appointmentType = "GROUP";
+				break;
+			default:
+				System.out.println("Invalid appointment type.");
+				return;
+		}
+		
+		System.out.println("Enter duration in minutes: ");
+		int durationMinutes = input.nextInt();
+		input.nextLine();
+		
+		System.out.println("Enter number of participants: ");
+		int participantCount = input.nextInt();
+		input.nextLine();
+		
+		System.out.println("Enter location (leave empty for none): ");
+		String location = input.nextLine();
+		
+		AppointmentRequest request = new AppointmentRequest(
+				appointmentType,
+				durationMinutes,
+				participantCount,
+				location
+		);
+		
+		BookingRuleStrategy rule = BookingRuleFactory.getRule(appointmentType);
+		if (rule != null && !rule.isValid(request)) {
+			System.out.println("Booking failed: " + rule.getErrorMessage());
+			return;
+		}
+		
 		try {
 			PreparedStatement checkStmt = conn.prepareStatement(
 					"SELECT * FROM \"TimeSlots\" WHERE slot_id = ? AND is_available = true"
@@ -580,10 +652,11 @@ public class Appoitment_Main_Page {
 			checkStmt.close();
 			
 			PreparedStatement bookStmt = conn.prepareStatement(
-					"INSERT INTO \"Appointment\" (user_id, slot_id) VALUES (?, ?) RETURNING appointment_id"
+					"INSERT INTO \"Appointment\" (user_id, slot_id, appointment_type) VALUES (?, ?, ?) RETURNING appointment_id"
 			);
 			bookStmt.setInt(1, loggedInUserId);
 			bookStmt.setInt(2, slotID);
+			bookStmt.setString(3, appointmentType);
 			ResultSet bookRs = bookStmt.executeQuery();
 			
 			if (bookRs.next()) {
@@ -606,15 +679,16 @@ public class Appoitment_Main_Page {
 				
 				if (userRs.next()) {
 					String userEmail = userRs.getString("email");
-					String appointmentDetails = "Appointment ID: " + appointmentId + 
+					String appointmentDetails = "Appointment ID: " + appointmentId +
+											   "\nType: " + appointmentType +
+											   "\nDuration: " + durationMinutes + " minutes" +
+											   "\nParticipants: " + participantCount +
+											   "\nLocation: " + (location.isEmpty() ? "None" : location) +
 											   "\nDate: " + startTime +
 											   "\nTime: " + startTime + " - " + endTime;
 					
-					// Send real email notification
 					notificationManager.sendBookingConfirmation(userEmail, appointmentDetails);
-					
-					// Schedule reminder for 24 hours before appointment
-					notificationManager.scheduleReminder(userEmail, appointmentId, 
+					notificationManager.scheduleReminder(userEmail, appointmentId,
 													   appointmentDetails, startTime.getTime());
 					
 					System.out.println("Appointment booked successfully! Email sent to: " + userEmail);
@@ -637,7 +711,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-					"SELECT a.appointment_id, t.start_datetime, t.end_datetime " +
+					"SELECT a.appointment_id, a.appointment_type, t.start_datetime, t.end_datetime " +
 					"FROM \"Appointment\" a " +
 					"JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
 					"WHERE a.user_id = ?"
@@ -651,6 +725,7 @@ public class Appoitment_Main_Page {
 				found = true;
 				System.out.println(
 					"Appointment ID: " + rs.getInt("appointment_id") +
+					" | Type: " + rs.getString("appointment_type") +
 					" | Start: " + rs.getTimestamp("start_datetime") +
 					" | End: " + rs.getTimestamp("end_datetime")
 				);
@@ -723,7 +798,6 @@ public class Appoitment_Main_Page {
 	        						   "\nDate: " + startTime +
 	        						   "\nTime: " + startTime + " - " + endTime;
 	        
-	        // Send real email notification
 	        notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
 	        notificationManager.cancelReminder(appointmentId);
 	        

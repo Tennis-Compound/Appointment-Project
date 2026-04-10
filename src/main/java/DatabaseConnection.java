@@ -6,13 +6,11 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 	private static Connection connection = null;
 	
-	
-	
 	public static Connection getConnection() {
 		if(connection == null) {
 			try {
 				Dotenv dotenv = Dotenv.configure()
-						.directory("C:\\Programming\\JAVA\\maven")
+						.directory(".")
 						.load();
 				String url = dotenv.get("DB_URL");
 				String user = dotenv.get("DB_USER");
