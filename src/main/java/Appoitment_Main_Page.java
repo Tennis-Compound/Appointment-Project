@@ -483,7 +483,8 @@ public class Appoitment_Main_Page {
 			System.out.println("2- Show booking rules");
 			System.out.println("3- Book an Appointment");
 			System.out.println("4- View My Appointment");
-	        System.out.println("5- Cancel an appointment");
+			System.out.println("5- Modify an appointment");
+			System.out.println("6- Cancel an appointment");
 			System.out.println("0- Logout");
 			
 			int choice = input.nextInt();
@@ -503,6 +504,9 @@ public class Appoitment_Main_Page {
 					viewMyAppointments();
 					break;
 				case 5:
+					modifyAppointment(input);
+					break;
+				case 6:
 					cancelAppointment(input);
 					break;
 				case 0:
@@ -535,7 +539,7 @@ public class Appoitment_Main_Page {
 		}
 		try {
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT * FROM \"TimeSlots\" WHERE is_available = 'true'");
+			ResultSet rs = stmt.executeQuery("SELECT * FROM \"TimeSlots\" WHERE is_available = 'true' AND start_datetime > NOW()");
 			System.out.println("\n Available Appointment Slots:");
 			boolean found = false;
 			while (rs.next()) {
@@ -634,13 +638,13 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement checkStmt = conn.prepareStatement(
-					"SELECT * FROM \"TimeSlots\" WHERE slot_id = ? AND is_available = true"
+					"SELECT * FROM \"TimeSlots\" WHERE slot_id = ? AND is_available = true AND start_datetime > NOW()"
 			);
 			checkStmt.setInt(1, slotID);
 			ResultSet rs = checkStmt.executeQuery();
 			
 			if(!rs.next()) {
-				System.out.println("Slot not available or does not exist.");
+				System.out.println("Slot not available, does not exist, or is in the past.");
 				rs.close();
 				checkStmt.close();
 				return;
@@ -723,11 +727,15 @@ public class Appoitment_Main_Page {
 			boolean found = false;
 			while(rs.next()) {
 				found = true;
+				Timestamp start = rs.getTimestamp("start_datetime");
+				String status = start.before(new Timestamp(System.currentTimeMillis())) ? "PAST" : "UPCOMING";
+				
 				System.out.println(
 					"Appointment ID: " + rs.getInt("appointment_id") +
 					" | Type: " + rs.getString("appointment_type") +
-					" | Start: " + rs.getTimestamp("start_datetime") +
-					" | End: " + rs.getTimestamp("end_datetime")
+					" | Start: " + start +
+					" | End: " + rs.getTimestamp("end_datetime") +
+					" | Status: " + status
 				);
 			}
 			if(!found) { 
@@ -738,6 +746,153 @@ public class Appoitment_Main_Page {
 			
 		} catch(SQLException e) {
 			System.out.println("Error fetching appointments: " + e.getMessage());
+		}
+	}
+	
+	/**
+	 * Allows a user to modify their upcoming appointment
+	 * Only future appointments can be modified for security
+	 */
+	private static void modifyAppointment(Scanner input) {
+		viewMyAppointments();
+		
+		Connection conn = DatabaseConnection.getConnection();
+		if(conn == null) {
+			System.out.println("Cannot connect to database.");
+			return;
+		}
+		
+		System.out.println("Enter the Appointment ID you want to modify: ");
+		int appointmentId = input.nextInt();
+		input.nextLine();
+		
+		try {
+			// Get current appointment details and validate it's a future appointment
+			PreparedStatement getApptStmt = conn.prepareStatement(
+				"SELECT a.slot_id, u.email, u.name, t.start_datetime, t.end_datetime, a.appointment_type " +
+				"FROM \"Appointment\" a " +
+				"JOIN \"Users\" u ON a.user_id = u.user_id " +
+				"JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
+				"WHERE a.appointment_id = ? AND a.user_id = ? AND t.start_datetime > NOW()"
+			);
+			getApptStmt.setInt(1, appointmentId);
+			getApptStmt.setInt(2, loggedInUserId);
+			ResultSet apptRs = getApptStmt.executeQuery();
+			
+			if (!apptRs.next()) {
+				System.out.println("Appointment not found, belongs to another user, or cannot be modified (past appointments cannot be changed).");
+				apptRs.close();
+				getApptStmt.close();
+				return;
+			}
+			
+			int oldSlotId = apptRs.getInt("slot_id");
+			String userEmail = apptRs.getString("email");
+			String userName = apptRs.getString("name");
+			Timestamp oldStartTime = apptRs.getTimestamp("start_datetime");
+			Timestamp oldEndTime = apptRs.getTimestamp("end_datetime");
+			String oldAppointmentType = apptRs.getString("appointment_type");
+			
+			System.out.println("\nCurrent Appointment Details:");
+			System.out.println("User: " + userName);
+			System.out.println("Email: " + userEmail);
+			System.out.println("Type: " + oldAppointmentType);
+			System.out.println("Current Slot: " + oldStartTime + " to " + oldEndTime);
+			apptRs.close();
+			getApptStmt.close();
+			
+			System.out.println("\nAvailable Slots for Modification:");
+			viewAvailableSlots();
+			
+			System.out.println("Enter the new Slot ID (or 0 to cancel): ");
+			int newSlotId = input.nextInt();
+			input.nextLine();
+			
+			if (newSlotId == 0) {
+				System.out.println("Modification cancelled.");
+				return;
+			}
+			
+			// Validate the new slot
+			PreparedStatement checkSlotStmt = conn.prepareStatement(
+				"SELECT is_available, start_datetime, end_datetime FROM \"TimeSlots\" WHERE slot_id = ? AND start_datetime > NOW()"
+			);
+			checkSlotStmt.setInt(1, newSlotId);
+			ResultSet slotRs = checkSlotStmt.executeQuery();
+			
+			if (!slotRs.next()) {
+				System.out.println("Invalid slot ID, slot not available, or slot is in the past.");
+				slotRs.close();
+				checkSlotStmt.close();
+				return;
+			}
+			
+			boolean isAvailable = slotRs.getBoolean("is_available");
+			Timestamp newStartTime = slotRs.getTimestamp("start_datetime");
+			Timestamp newEndTime = slotRs.getTimestamp("end_datetime");
+			slotRs.close();
+			checkSlotStmt.close();
+			
+			if (!isAvailable) {
+				System.out.println("Selected slot is not available.");
+				return;
+			}
+			
+			// Update the appointment
+			PreparedStatement updateApptStmt = conn.prepareStatement(
+				"UPDATE \"Appointment\" SET slot_id = ? WHERE appointment_id = ?"
+			);
+			updateApptStmt.setInt(1, newSlotId);
+			updateApptStmt.setInt(2, appointmentId);
+			int rowsUpdated = updateApptStmt.executeUpdate();
+			updateApptStmt.close();
+			
+			if (rowsUpdated > 0) {
+				// Make old slot available again
+				PreparedStatement freeOldSlotStmt = conn.prepareStatement(
+					"UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?"
+				);
+				freeOldSlotStmt.setInt(1, oldSlotId);
+				freeOldSlotStmt.executeUpdate();
+				freeOldSlotStmt.close();
+				
+				// Make new slot unavailable
+				PreparedStatement bookNewSlotStmt = conn.prepareStatement(
+					"UPDATE \"TimeSlots\" SET is_available = false WHERE slot_id = ?"
+				);
+				bookNewSlotStmt.setInt(1, newSlotId);
+				bookNewSlotStmt.executeUpdate();
+				bookNewSlotStmt.close();
+				
+				// Send notification and manage reminders
+				String oldDetails = "Type: " + oldAppointmentType + 
+								 "\nDate: " + oldStartTime + 
+								 "\nTime: " + oldStartTime + " - " + oldEndTime;
+				String newDetails = "Type: " + oldAppointmentType + 
+								 "\nDate: " + newStartTime + 
+								 "\nTime: " + newStartTime + " - " + newEndTime;
+				
+				notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
+				notificationManager.cancelReminder(appointmentId);
+				
+				// Schedule new reminder for the modified appointment
+				String appointmentDetails = "Appointment ID: " + appointmentId + 
+										   "\nType: " + oldAppointmentType +
+										   "\nDate: " + newStartTime + 
+										   "\nTime: " + newStartTime + " - " + newEndTime;
+				notificationManager.scheduleReminder(userEmail, appointmentId, 
+												   appointmentDetails, newStartTime.getTime());
+				
+				System.out.println("Appointment modified successfully! Email sent to: " + userEmail);
+				System.out.println("New appointment time: " + newStartTime + " to " + newEndTime);
+			} else {
+				System.out.println("Failed to modify appointment.");
+			}
+			
+		} catch (SQLException e) {
+			System.out.println("Error modifying appointment: " + e.getMessage());
+		} catch (Exception e) {
+			System.out.println("Invalid input: " + e.getMessage());
 		}
 	}
 	
