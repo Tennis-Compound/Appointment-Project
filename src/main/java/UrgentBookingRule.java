@@ -1,3 +1,5 @@
+
+
 public class UrgentBookingRule implements BookingRuleStrategy {
 
     @Override

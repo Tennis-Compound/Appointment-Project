@@ -1,3 +1,4 @@
+
 public enum AppointmentType {
     URGENT,
     FOLLOW_UP,
