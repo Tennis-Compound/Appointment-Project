@@ -7,6 +7,7 @@ public class DatabaseConnection {
 	private static Connection connection = null;
 	
 	public static Connection getConnection() {
+
 		if(connection == null) {
 			try {
 				Dotenv dotenv = Dotenv.configure()
@@ -24,7 +25,6 @@ public class DatabaseConnection {
 		}
 		return connection;
 	}
-	
 	public static void closeConnection() {
 		if(connection != null) {
 			try {

@@ -2,19 +2,41 @@ import java.util.Scanner;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.sql.*;
 
+/**
+ * Main class for the Appointment Scheduling System
+ * This class handles:
+ * - Application entry point
+ * - User and admin authentication
+ * - Menu navigation
+ * - Appointment management
+ * - Notification service initialization
+ * 
+ * It interacts with the database and notification services
+ * to manage appointments and user actions.
+ */
 public class Appoitment_Main_Page {
 	
+	/** Indicates whether an admin is currently logged in */
 	static boolean isLoggedIn = false;
+	/** Stores the logged-in user's ID */
 	private static int loggedInUserId = -1;
+	/** Stores the logged-in user's name */
 	private static String loggedInUserName = "";
-	
+	/** Handles sending notifications (email/mock) */
 	private static NotificationManager notificationManager;
+	/** Flag to determine whether to use mock notifications */
 	private static boolean useMockNotifications = false;
 	
+	/**
+     * Entry point of the application.
+     * 
+     * Initializes services and displays menus in a loop.
+     * 
+     * @param args command-line arguments (not used)
+     */
 	public static void main(String[] args) {
 		
 		System.out.println("Welcome to Appointment Scheduling System");
-		
 		initializeNotificationService();
 		
 		Scanner input = new Scanner(System.in);
@@ -53,6 +75,12 @@ public class Appoitment_Main_Page {
 		}
 	}
 
+	/**
+     * Initializes the notification service.
+     * 
+     * Loads SMTP configuration from environment variables using Dotenv.
+     * If configuration is missing or fails, falls back to a mock service.
+     */
 	private static void initializeNotificationService() {
 		if (useMockNotifications) {
 			notificationManager = new NotificationManager(new MockNotificationService());
@@ -60,7 +88,7 @@ public class Appoitment_Main_Page {
 		} else {
 			try {
 				Dotenv dotenv = Dotenv.configure()
-						.directory(".")
+						.directory("C:\\Programming\\JAVA\\maven")
 						.load();
 				
 				String smtpHost = dotenv.get("SMTP_HOST");
@@ -87,6 +115,12 @@ public class Appoitment_Main_Page {
 		}
 	}
 
+	/**
+     * Displays the main menu and reads user input.
+     * 
+     * @param input Scanner object for user input
+     * @return the selected menu option
+     */
 	private static int showMenu(Scanner input) {
 		System.out.println("\nEnter the number following what you want to do");
 		System.out.println("1- Administrator Login ");
@@ -100,9 +134,17 @@ public class Appoitment_Main_Page {
 		return choice;
 	}
 	
+	/**
+     * Handles administrator login.
+     * 
+     * Reads credentials from environment variables and compares them
+     * with user input.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void adminLogin(Scanner input) {
 		Dotenv dotenv = Dotenv.configure()
-				.directory(".")
+				.directory("C:\\Programming\\JAVA\\maven")
 		        .load();
 		
 		String adminUsername = dotenv.get("adminName");
@@ -122,6 +164,11 @@ public class Appoitment_Main_Page {
         }
 	}
 	
+	/**
+     * Displays the administrator menu and handles admin actions.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void adminMenu(Scanner input) {
 		System.out.println("\nAdministrator Menu");
 		System.out.println("1- Logout");
@@ -155,6 +202,15 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Tests the notification system by sending a booking confirmation
+     * and a cancellation notice to a specified email address.
+     *
+     * Prompts the admin to enter a target email, falling back to
+     * "demo@example.com" if none is provided.
+     *
+     * @param input Scanner object for user input
+     */
 	private static void testNotifications(Scanner input) {
 		System.out.println("Testing Notification System");
 		System.out.println("Enter email to test (or press Enter for demo@example.com): ");
@@ -175,6 +231,11 @@ public class Appoitment_Main_Page {
 		System.out.println("Test notifications sent! Check your email inbox.");
 	}
 	
+	/**
+     * Retrieves and displays all reservations from the database.
+     * 
+     * Shows appointment details including user info and time slots.
+     */
 	private static void adminViewAllReservations() {
 		Connection conn = DatabaseConnection.getConnection();
 		if (conn == null) {
@@ -216,6 +277,13 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Cancels a reservation by appointment ID.
+     * 
+     * Also updates slot availability and sends a cancellation notification.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void adminCancelReservation(Scanner input) {
 		adminViewAllReservations();
 		
@@ -285,6 +353,18 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Allows an administrator to reschedule an existing reservation to a
+     * different available time slot.
+     *
+     * Displays all current reservations, then prompts for the appointment ID
+     * to modify and the new slot ID. Validates that the chosen slot exists
+     * and is available, updates the appointment and both affected time slots
+     * in the database, cancels the old reminder, and sends a modification
+     * notification to the user.
+     *
+     * @param input Scanner object for user input
+     */
 	private static void adminModifyReservation(Scanner input) {
 		adminViewAllReservations();
 		
@@ -403,6 +483,11 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Handles user login by verifying credentials from the database.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void userLogin(Scanner input) {
 		Connection conn = DatabaseConnection.getConnection();
 		if(conn == null) {
@@ -418,7 +503,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-					"SELECT * FROM \"Users\" WHERE name = ? AND password = ?"
+					"SELECT * FROM \"Users\" WHERE name = ARRAY[?] AND password = ARRAY[?]"
 			);
 			stmt.setString(1, username);
 			stmt.setString(2, password);
@@ -440,6 +525,11 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Registers a new user in the system.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void userSignUp(Scanner input) {
 		Connection conn = DatabaseConnection.getConnection();
 		if(conn == null) {
@@ -458,7 +548,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement stmt = conn.prepareStatement(
-					"INSERT INTO \"Users\" (name, email, password) VALUES (?, ?, ?)"
+					"INSERT INTO \"Users\" (name, email, password) VALUES (ARRAY[?], ARRAY[?], ARRAY[?])"
 			);
 			stmt.setString(1, username);
 			stmt.setString(2, userEmail);
@@ -476,6 +566,17 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Displays the user menu in a loop and dispatches actions based on
+     * the logged-in user's selection.
+     *
+     * Available actions include viewing available slots, reading booking
+     * rules, booking an appointment, viewing existing appointments,
+     * modifying an appointment, cancelling an appointment, and logging out.
+     * The loop exits when the user chooses to log out.
+     *
+     * @param input Scanner object for user input
+     */
 	private static void userMenu(Scanner input) {
 		while(true) {
 			System.out.println("\nUser Menu - Welcome " + loggedInUserName);
@@ -520,6 +621,19 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Prints the booking constraints for each supported appointment type.
+     *
+     * Rules displayed:
+     * <ul>
+     *   <li>URGENT and FOLLOW_UP require a duration of 30 minutes or less.</li>
+     *   <li>ASSESSMENT requires a duration of at least 60 minutes.</li>
+     *   <li>VIRTUAL requires no physical location.</li>
+     *   <li>IN_PERSON requires a physical location.</li>
+     *   <li>INDIVIDUAL requires exactly one participant.</li>
+     *   <li>GROUP requires more than one participant.</li>
+     * </ul>
+     */
 	private static void showBookingRules() {
 		System.out.println("\nBooking Rules by Appointment Type:");
 		System.out.println("URGENT      -> duration must be 30 minutes or less");
@@ -531,6 +645,11 @@ public class Appoitment_Main_Page {
 		System.out.println("GROUP       -> participant count must be more than 1");
 	}
 	
+	/**
+     * Displays available appointment slots.
+     * 
+     * Fetches slots marked as available from the database.
+     */
 	private static void viewAvailableSlots() {
 		Connection conn = DatabaseConnection.getConnection();
 		if(conn == null) {
@@ -539,7 +658,7 @@ public class Appoitment_Main_Page {
 		}
 		try {
 			Statement stmt = conn.createStatement();
-			ResultSet rs = stmt.executeQuery("SELECT * FROM \"TimeSlots\" WHERE is_available = 'true' AND start_datetime > NOW()");
+			ResultSet rs = stmt.executeQuery("SELECT * FROM \"TimeSlots\" WHERE is_available = 'true'");
 			System.out.println("\n Available Appointment Slots:");
 			boolean found = false;
 			while (rs.next()) {
@@ -558,6 +677,14 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Books a new appointment for the logged-in user.
+     * 
+     * Validates booking rules, checks slot availability,
+     * updates database, and sends notifications.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void bookAppointment(Scanner input) {
 		viewAvailableSlots();
 		
@@ -638,7 +765,7 @@ public class Appoitment_Main_Page {
 		
 		try {
 			PreparedStatement checkStmt = conn.prepareStatement(
-					"SELECT * FROM \"TimeSlots\" WHERE slot_id = ? AND is_available = true AND start_datetime > NOW()"
+					"SELECT * FROM \"TimeSlots\" WHERE slot_id = ? AND is_available = true"
 			);
 			checkStmt.setInt(1, slotID);
 			ResultSet rs = checkStmt.executeQuery();
@@ -656,7 +783,7 @@ public class Appoitment_Main_Page {
 			checkStmt.close();
 			
 			PreparedStatement bookStmt = conn.prepareStatement(
-					"INSERT INTO \"Appointment\" (user_id, slot_id, appointment_type) VALUES (?, ?, ?) RETURNING appointment_id"
+					"INSERT INTO \"Appointment\" (user_id, slot_id, appointment_type) VALUES (?, ?, ARRAY[?]) RETURNING appointment_id"
 			);
 			bookStmt.setInt(1, loggedInUserId);
 			bookStmt.setInt(2, slotID);
@@ -706,6 +833,9 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Displays all appointments for the logged-in user.
+     */
 	private static void viewMyAppointments() {
 		Connection conn = DatabaseConnection.getConnection();
 		if(conn == null) {
@@ -748,11 +878,21 @@ public class Appoitment_Main_Page {
 			System.out.println("Error fetching appointments: " + e.getMessage());
 		}
 	}
-	
+
 	/**
-	 * Allows a user to modify their upcoming appointment
-	 * Only future appointments can be modified for security
-	 */
+     * Allows the logged-in user to reschedule one of their upcoming
+     * appointments to a different available time slot.
+     *
+     * Displays the user's current appointments, then prompts for the
+     * appointment ID to change and the desired new slot ID. Only future
+     * appointments belonging to the logged-in user may be modified.
+     * On success, the old slot is freed, the new slot is marked
+     * unavailable, a modification notification is sent to the user,
+     * the old reminder is cancelled, and a new reminder is scheduled
+     * for the updated time.
+     *
+     * @param input Scanner object for user input
+     */
 	private static void modifyAppointment(Scanner input) {
 		viewMyAppointments();
 		
@@ -896,6 +1036,13 @@ public class Appoitment_Main_Page {
 		}
 	}
 	
+	/**
+     * Cancels a user's appointment.
+     * 
+     * Updates database and sends cancellation notification.
+     * 
+     * @param input Scanner object for user input
+     */
 	private static void cancelAppointment(Scanner input) {
 		viewMyAppointments();
 		
