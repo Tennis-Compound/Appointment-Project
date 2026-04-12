@@ -28,7 +28,6 @@ public class Appoitment_Main_Page {
 	public static void main(String[] args) {
 		
 		System.out.println("Welcome to Appointment Scheduling System");
-		
 		initializeNotificationService();
 		
 		Scanner input = new Scanner(System.in);
