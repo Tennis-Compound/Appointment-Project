@@ -1,3 +1,4 @@
+
 public class GroupBookingRule implements BookingRuleStrategy {
 
     @Override

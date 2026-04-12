@@ -1,3 +1,4 @@
+
 public class VirtualBookingRule implements BookingRuleStrategy {
 
     @Override

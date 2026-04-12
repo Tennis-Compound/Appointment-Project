@@ -1,3 +1,5 @@
+
+
 public class AssessmentBookingRule implements BookingRuleStrategy {
 
     @Override
