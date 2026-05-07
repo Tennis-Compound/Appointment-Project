@@ -13,6 +13,7 @@ public class DatabaseConnection {
 			try {
 				Dotenv dotenv = Dotenv.configure()
 						.directory(".")
+						.ignoreIfMissing()
 						.load();
 				String url = dotenv.get("DB_URL");
 				String user = dotenv.get("DB_USER");
