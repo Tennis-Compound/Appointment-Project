@@ -88,8 +88,9 @@ public class Appoitment_Main_Page {
 		} else {
 			try {
 				Dotenv dotenv = Dotenv.configure()
-						.directory("C:\\Programming\\JAVA\\maven")
-						.load();
+						.directory(".")
+				        .ignoreIfMissing()
+				        .load();
 				
 				String smtpHost = dotenv.get("SMTP_HOST");
 				String smtpPort = dotenv.get("SMTP_PORT");
@@ -144,7 +145,8 @@ public class Appoitment_Main_Page {
      */
 	private static void adminLogin(Scanner input) {
 		Dotenv dotenv = Dotenv.configure()
-				.directory("C:\\Programming\\JAVA\\maven")
+				.directory(".")
+		        .ignoreIfMissing()
 		        .load();
 		
 		String adminUsername = dotenv.get("adminName");
