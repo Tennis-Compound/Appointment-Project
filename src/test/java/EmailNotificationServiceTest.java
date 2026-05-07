@@ -30,6 +30,10 @@ public class EmailNotificationServiceTest {
     static void tearDownStaticMocks() {
         mockedTransport.close();
     }
+    @AfterEach
+        void resetMocks() {
+        mockedTransport.reset();
+    }
 
     @BeforeEach
     void setUp() {
