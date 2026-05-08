@@ -28,7 +28,7 @@ public class Appoitment_Main_Page {
 	private static boolean useMockNotifications = false;
 	private static final String ENTER_USERNAME = "Enter username: ";
 	private static final String ENTER_PASSWORD = "Enter password: ";
-	private static final String CANNOT_CONNECT = CANNOT_CONNECT;
+	private static final String CANNOT_CONNECT = "Cannot connect to database.";
 	/**
      * Entry point of the application.
      * 
