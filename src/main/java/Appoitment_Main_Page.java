@@ -26,7 +26,9 @@ public class Appoitment_Main_Page {
 	private static NotificationManager notificationManager;
 	/** Flag to determine whether to use mock notifications */
 	private static boolean useMockNotifications = false;
-	
+	private static final String ENTER_USERNAME = "Enter username: ";
+	private static final String ENTER_PASSWORD = "Enter password: ";
+	private static final String CANNOT_CONNECT = CANNOT_CONNECT;
 	/**
      * Entry point of the application.
      * 
@@ -134,9 +136,9 @@ public class Appoitment_Main_Page {
             return;
         }
  
-        System.out.println("Enter username: ");
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
-        System.out.println("Enter password: ");
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         if (username.equals(adminUsername) && password.equals(adminPassword)) {
@@ -206,7 +208,7 @@ public class Appoitment_Main_Page {
 	private static void adminViewAllReservations() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         String query = "SELECT a.appointment_id, a.appointment_type, u.name AS user_name, u.email, " +
@@ -249,7 +251,7 @@ public class Appoitment_Main_Page {
         adminViewAllReservations();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         System.out.println("Enter the Appointment ID you want to cancel: ");
@@ -323,7 +325,7 @@ public class Appoitment_Main_Page {
         adminViewAllReservations();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         System.out.println("Enter the Appointment ID you want to modify: ");
@@ -441,12 +443,12 @@ public class Appoitment_Main_Page {
 	 private static void userLogin(Scanner input) {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
-        System.out.println("Enter username: ");
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
-        System.out.println("Enter password: ");
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -476,14 +478,14 @@ public class Appoitment_Main_Page {
 	private static void userSignUp(Scanner input) {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
-        System.out.println("Enter username: ");
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
         System.out.println("Enter Email: ");
         String userEmail = input.nextLine();
-        System.out.println("Enter password: ");
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -572,7 +574,7 @@ public class Appoitment_Main_Page {
 	private static void viewAvailableSlots() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         try (Statement stmt = conn.createStatement();
@@ -605,7 +607,7 @@ public class Appoitment_Main_Page {
         viewAvailableSlots();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         System.out.println("Enter the slot ID you want to book: ");
@@ -720,7 +722,7 @@ public class Appoitment_Main_Page {
 	private static void viewMyAppointments() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -771,7 +773,7 @@ private static void modifyAppointment(Scanner input) {
         viewMyAppointments();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         System.out.println("Enter the Appointment ID you want to modify: ");
@@ -907,7 +909,7 @@ private static void modifyAppointment(Scanner input) {
         viewMyAppointments();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            System.out.println("Cannot connect to database.");
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         System.out.println("Enter the Appointment ID you want to cancel: ");
