@@ -239,44 +239,42 @@ public class Appoitment_Main_Page {
      * Shows appointment details including user info and time slots.
      */
 	private static void adminViewAllReservations() {
-		Connection conn = DatabaseConnection.getConnection();
-		if (conn == null) {
-			System.out.println("Cannot connect to database.");
-			return;
-		}
-		
-		try {
-			PreparedStatement stmt = conn.prepareStatement(
-				"SELECT a.appointment_id, a.appointment_type, u.name AS user_name, u.email, " +
-				"t.start_datetime, t.end_datetime " +
-				"FROM \"Appointment\" a " +
-				"JOIN \"Users\" u ON a.user_id = u.user_id " +
-				"JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
-				"ORDER BY a.appointment_id"
-			);
-			ResultSet rs = stmt.executeQuery();
-			
-			System.out.println("\n=== All Reservations ===");
-			boolean found = false;
-			while (rs.next()) {
-				found = true;
-				System.out.println(
-					"Appointment ID: " + rs.getInt("appointment_id") +
-					" | Type: " + rs.getString("appointment_type") +
-					" | User: " + rs.getString("user_name") +
-					" | Email: " + rs.getString("email") +
-					" | Start: " + rs.getTimestamp("start_datetime") +
-					" | End: " + rs.getTimestamp("end_datetime")
-				);
-			}
-			if (!found) {
-				System.out.println("No reservations found.");
-			}
-			rs.close();
-			stmt.close();
-		} catch (SQLException e) {
-			System.out.println("Error fetching reservations: " + e.getMessage());
-		}
+	    Connection conn = DatabaseConnection.getConnection();
+	    if (conn == null) {
+	        System.out.println("Cannot connect to database.");
+	        return;
+	    }
+	
+	    String query = "SELECT a.appointment_id, a.appointment_type, u.name AS user_name, u.email, " +
+	                   "t.start_datetime, t.end_datetime " +
+	                   "FROM \"Appointment\" a " +
+	                   "JOIN \"Users\" u ON a.user_id = u.user_id " +
+	                   "JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
+	                   "ORDER BY a.appointment_id";
+	
+	    try (PreparedStatement stmt = conn.prepareStatement(query);
+	         ResultSet rs = stmt.executeQuery()) {
+	
+	        System.out.println("\n=== All Reservations ===");
+	        boolean found = false;
+	        while (rs.next()) {
+	            found = true;
+	            System.out.println(
+	                "Appointment ID: " + rs.getInt("appointment_id") +
+	                " | Type: " + rs.getString("appointment_type") +
+	                " | User: " + rs.getString("user_name") +
+	                " | Email: " + rs.getString("email") +
+	                " | Start: " + rs.getTimestamp("start_datetime") +
+	                " | End: " + rs.getTimestamp("end_datetime")
+	            );
+	        }
+	        if (!found) {
+	            System.out.println("No reservations found.");
+	        }
+	
+	    } catch (SQLException e) {
+	        System.out.println("Error fetching reservations: " + e.getMessage());
+	    }
 	}
 	
 	/**
@@ -286,74 +284,73 @@ public class Appoitment_Main_Page {
      * 
      * @param input Scanner object for user input
      */
-	private static void adminCancelReservation(Scanner input) {
-		adminViewAllReservations();
-		
-		Connection conn = DatabaseConnection.getConnection();
-		if (conn == null) {
-			System.out.println("Cannot connect to database.");
-			return;
-		}
-		
-		System.out.println("Enter the Appointment ID you want to cancel: ");
-		int appointmentId = input.nextInt();
-		input.nextLine();
-		
-		try {
-			PreparedStatement getDetailsStmt = conn.prepareStatement(
-				"SELECT a.slot_id, u.email, t.start_datetime, t.end_datetime " +
-				"FROM \"Appointment\" a " +
-				"JOIN \"Users\" u ON a.user_id = u.user_id " +
-				"JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
-				"WHERE a.appointment_id = ?"
-			);
-			getDetailsStmt.setInt(1, appointmentId);
-			ResultSet detailsRs = getDetailsStmt.executeQuery();
-			
-			if (!detailsRs.next()) {
-				System.out.println("Appointment not found.");
-				detailsRs.close();
-				getDetailsStmt.close();
-				return;
-			}
-			
-			int slotId = detailsRs.getInt("slot_id");
-			String userEmail = detailsRs.getString("email");
-			Timestamp startTime = detailsRs.getTimestamp("start_datetime");
-			Timestamp endTime = detailsRs.getTimestamp("end_datetime");
-			detailsRs.close();
-			getDetailsStmt.close();
-			
-			PreparedStatement deleteStmt = conn.prepareStatement(
-				"DELETE FROM \"Appointment\" WHERE appointment_id = ?"
-			);
-			deleteStmt.setInt(1, appointmentId);
-			int rowsAffected = deleteStmt.executeUpdate();
-			deleteStmt.close();
-			
-			if (rowsAffected > 0) {
-				PreparedStatement updateStmt = conn.prepareStatement(
-					"UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?"
-				);
-				updateStmt.setInt(1, slotId);
-				updateStmt.executeUpdate();
-				updateStmt.close();
-				
-				String appointmentDetails = "Appointment ID: " + appointmentId + 
-										   "\nDate: " + startTime +
-										   "\nTime: " + startTime + " - " + endTime;
-				
-				notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
-				notificationManager.cancelReminder(appointmentId);
-				
-				System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
-			} else {
-				System.out.println("Failed to cancel reservation.");
-			}
-		} catch (SQLException e) {
-			System.out.println("Error cancelling reservation: " + e.getMessage());
-		}
-	}
+private static void adminCancelReservation(Scanner input) {
+    adminViewAllReservations();
+
+    Connection conn = DatabaseConnection.getConnection();
+    if (conn == null) {
+        System.out.println("Cannot connect to database.");
+        return;
+    }
+
+    System.out.println("Enter the Appointment ID you want to cancel: ");
+    int appointmentId = input.nextInt();
+    input.nextLine();
+
+    int slotId;
+    String userEmail;
+    Timestamp startTime;
+    Timestamp endTime;
+
+    try (PreparedStatement getDetailsStmt = conn.prepareStatement(
+            "SELECT a.slot_id, u.email, t.start_datetime, t.end_datetime " +
+            "FROM \"Appointment\" a " +
+            "JOIN \"Users\" u ON a.user_id = u.user_id " +
+            "JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
+            "WHERE a.appointment_id = ?")) {
+        getDetailsStmt.setInt(1, appointmentId);
+        try (ResultSet detailsRs = getDetailsStmt.executeQuery()) {
+            if (!detailsRs.next()) {
+                System.out.println("Appointment not found.");
+                return;
+            }
+            slotId = detailsRs.getInt("slot_id");
+            userEmail = detailsRs.getString("email");
+            startTime = detailsRs.getTimestamp("start_datetime");
+            endTime = detailsRs.getTimestamp("end_datetime");
+        }
+    } catch (SQLException e) {
+        System.out.println("Error fetching appointment: " + e.getMessage());
+        return;
+    }
+
+    try (PreparedStatement deleteStmt = conn.prepareStatement(
+            "DELETE FROM \"Appointment\" WHERE appointment_id = ?")) {
+        deleteStmt.setInt(1, appointmentId);
+        int rowsAffected = deleteStmt.executeUpdate();
+
+        if (rowsAffected > 0) {
+            try (PreparedStatement updateStmt = conn.prepareStatement(
+                    "UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?")) {
+                updateStmt.setInt(1, slotId);
+                updateStmt.executeUpdate();
+            }
+
+            String appointmentDetails = "Appointment ID: " + appointmentId +
+                                        "\nDate: " + startTime +
+                                        "\nTime: " + startTime + " - " + endTime;
+
+            notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
+            notificationManager.cancelReminder(appointmentId);
+
+            System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
+        } else {
+            System.out.println("Failed to cancel reservation.");
+        }
+    } catch (SQLException e) {
+        System.out.println("Error cancelling reservation: " + e.getMessage());
+    }
+}
 	
 	/**
      * Allows an administrator to reschedule an existing reservation to a
