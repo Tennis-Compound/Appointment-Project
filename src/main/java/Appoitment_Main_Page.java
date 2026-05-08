@@ -312,8 +312,8 @@ public class Appoitment_Main_Page {
                     updateStmt.executeUpdate();
                 }
                 String appointmentDetails = AppointmentID2 + appointmentId +
-                                            "\nDate + startTime +
-                                            "\nTime + startTime + " - " + endTime;
+                                            Date + startTime +
+                                            Time + startTime + " - " + endTime;
                 notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
                 notificationManager.cancelReminder(appointmentId);
                 System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
@@ -716,8 +716,8 @@ public class Appoitment_Main_Page {
                                         "\nDuration: " + durationMinutes + " minutes" +
                                         "\nParticipants: " + participantCount +
                                         "\nLocation: " + (location.isEmpty() ? "None" : location) +
-                                        "\nDate + startTime +
-                                        "\nTime + startTime + " - " + endTime;
+                                        Date + startTime +
+                                        Time + startTime + " - " + endTime;
                                 notificationManager.sendBookingConfirmation(userEmail, appointmentDetails);
                                 notificationManager.scheduleReminder(userEmail, appointmentId,
                                         appointmentDetails, startTime.getTime());
@@ -899,15 +899,15 @@ private static void modifyAppointment(Scanner input) {
             System.out.println("Error booking new slot: " + e.getMessage());
         }
  
-        String oldDetails = Type + oldAppointmentType + "\nDate + oldStartTime + "\nTime + oldStartTime + " - " + oldEndTime;
-        String newDetails = Type + oldAppointmentType + "\nDate + newStartTime + "\nTime + newStartTime + " - " + newEndTime;
+        String oldDetails = Type + oldAppointmentType + Date + oldStartTime + "\nTime + oldStartTime + " - " + oldEndTime;
+        String newDetails = Type + oldAppointmentType + Date + newStartTime + "\nTime + newStartTime + " - " + newEndTime;
         notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
         notificationManager.cancelReminder(appointmentId);
  
         String appointmentDetails = AppointmentID2 + appointmentId +
                 "\nType: " + oldAppointmentType +
-                "\nDate + newStartTime +
-                "\nTime + newStartTime + " - " + newEndTime;
+                Date + newStartTime +
+                Time + newStartTime + " - " + newEndTime;
         notificationManager.scheduleReminder(userEmail, appointmentId, appointmentDetails, newStartTime.getTime());
  
         System.out.println("Appointment modified successfully! Email sent to: " + userEmail);
@@ -978,8 +978,8 @@ private static void modifyAppointment(Scanner input) {
         }
  
         String appointmentDetails = AppointmentID2 + appointmentId +
-                "\nDate + startTime +
-                "\nTime + startTime + " - " + endTime;
+                Date + startTime +
+                Time + startTime + " - " + endTime;
         notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
         notificationManager.cancelReminder(appointmentId);
         System.out.println("Appointment cancelled successfully! Email sent to: " + userEmail);
