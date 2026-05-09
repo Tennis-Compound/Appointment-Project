@@ -30,7 +30,7 @@ import java.util.Scanner;
  *  - userSignUp: rs > 0 false path
  *  - initializeNotificationService: useMockNotifications=true branch (already partially covered)
  */
-public class CoverageBoostTest {
+public class Coverageboosttest {
 
     private final PrintStream originalOut = System.out;
     private final InputStream originalIn  = System.in;
