@@ -1,9 +1,11 @@
 import java.util.Properties;
 import javax.mail.*;
 import javax.mail.internet.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class EmailNotificationService implements NotificationService {
-    
+    private static final Logger LOGGER = Logger.getLogger(EmailNotificationService.class.getName());
     private final String smtpHost;
     private final String smtpPort;
     private final String smtpUsername;
@@ -63,9 +65,9 @@ public class EmailNotificationService implements NotificationService {
             Transport.send(emailMessage);
             System.out.println("Email sent successfully to " + toEmail);
             
-        } catch (MessagingException e) {
-            System.out.println("Failed to send email: " + e.getMessage());
-            e.printStackTrace();
+        }  catch (MessagingException e) {
+            System.out.println("Failed to send email to " + toEmail + ": " + e.getMessage());
+            LOGGER.log(Level.SEVERE, "Failed to send email", e);
         }
     }
 }
