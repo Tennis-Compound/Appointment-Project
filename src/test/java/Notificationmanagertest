@@ -1,0 +1,188 @@
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
+
+import java.lang.reflect.Field;
+import java.util.Map;
+
+
+public class Notificationmanagertest {
+
+    private NotificationService mockService;
+    private NotificationManager manager;
+
+    @BeforeEach
+    void setUp() {
+        mockService = mock(NotificationService.class);
+        manager = new NotificationManager(mockService);
+    }
+
+   
+
+    @Test
+    void scheduleReminder_executesTimerTask_andCoversLines() throws Exception {
+        long appointmentTime = System.currentTimeMillis()
+                + (24L * 60 * 60 * 1000) // 24 hours
+                + 100;                   // small delay
+
+        manager.scheduleReminder("test@mail.com", 999, "MY DETAILS", appointmentTime);
+
+        Thread.sleep(300);
+
+        verify(mockService).sendReminder(
+                eq("test@mail.com"),
+                contains("friendly reminder")
+        );
+    }
+
+ 
+
+    @Test
+    void scheduleReminder_timerRemovesItselfAfterExecution() throws Exception {
+        long appointmentTime = System.currentTimeMillis()
+                + (24L * 60 * 60 * 1000)
+                + 100;
+
+        manager.scheduleReminder("test@mail.com", 123, "DATA", appointmentTime);
+
+        Thread.sleep(300);
+
+        Field field = NotificationManager.class.getDeclaredField("reminderTimers");
+        field.setAccessible(true);
+
+        Map<?, ?> map = (Map<?, ?>) field.get(manager);
+
+        assertFalse(map.containsKey(123));
+    }
+
+    
+    @Test
+    void scheduleReminder_pastAppointment_doesNothing() throws Exception {
+        long past = System.currentTimeMillis() - 1;
+        manager.scheduleReminder("a@b.com", 1, "details", past);
+
+        Thread.sleep(100);
+
+        verify(mockService, never()).sendReminder(anyString(), anyString());
+    }
+
+    @Test
+    void scheduleReminder_nowAppointment_doesNothing() throws Exception {
+        long now = System.currentTimeMillis();
+        manager.scheduleReminder("a@b.com", 2, "details", now);
+
+        Thread.sleep(100);
+
+        verify(mockService, never()).sendReminder(anyString(), anyString());
+    }
+
+    
+
+    @Test
+    void cancelReminder_noTimer_noException() {
+        assertDoesNotThrow(() -> manager.cancelReminder(999));
+    }
+
+    @Test
+    void cancelReminder_existingTimer_removesIt() throws Exception {
+        long future = System.currentTimeMillis() + (25L * 60 * 60 * 1000);
+
+        manager.scheduleReminder("a@b.com", 5, "details", future);
+        manager.cancelReminder(5);
+
+        Field field = NotificationManager.class.getDeclaredField("reminderTimers");
+        field.setAccessible(true);
+
+        Map<?, ?> map = (Map<?, ?>) field.get(manager);
+
+        assertFalse(map.containsKey(5));
+    }
+
+    @Test
+    void cancelReminder_twice_secondIsNoOp() {
+        long future = System.currentTimeMillis() + (25L * 60 * 60 * 1000);
+
+        manager.scheduleReminder("a@b.com", 6, "details", future);
+        manager.cancelReminder(6);
+
+        assertDoesNotThrow(() -> manager.cancelReminder(6));
+    }
+
+  
+
+    @Test
+    void scheduleReminder_replacesOldReminder() throws Exception {
+        long t1 = System.currentTimeMillis() + (24L * 60 * 60 * 1000) + 200;
+        long t2 = System.currentTimeMillis() + (24L * 60 * 60 * 1000) + 50;
+
+        manager.scheduleReminder("a@b.com", 10, "OLD", t1);
+        manager.scheduleReminder("a@b.com", 10, "NEW", t2);
+
+        Thread.sleep(300);
+
+        verify(mockService).sendReminder(eq("a@b.com"), contains("NEW"));
+    }
+
+   
+
+    @Test
+    void sendBookingConfirmation_fullMessage() {
+        manager.sendBookingConfirmation("a@b.com", "Room 101");
+
+        verify(mockService).sendBookingConfirmation(
+                eq("a@b.com"),
+                argThat(msg ->
+                        msg.contains("successfully booked") &&
+                        msg.contains("Room 101") &&
+                        msg.contains("support@appointmentsystem.com")
+                )
+        );
+    }
+
+   
+
+    @Test
+    void sendCancellationNotice_fullMessage() {
+        manager.sendCancellationNotice("a@b.com", "Slot X");
+
+        verify(mockService).sendCancellationNotice(
+                eq("a@b.com"),
+                argThat(msg ->
+                        msg.contains("cancelled") &&
+                        msg.contains("Slot X") &&
+                        msg.contains("Appointment System Team")
+                )
+        );
+    }
+
+   
+
+    @Test
+    void sendModificationNotice_fullMessage() {
+        manager.sendModificationNotice("a@b.com", "OLD", "NEW");
+
+        verify(mockService).sendReminder(
+                eq("a@b.com"),
+                argThat(msg ->
+                        msg.contains("modified") &&
+                        msg.contains("OLD") &&
+                        msg.contains("NEW") &&
+                        msg.contains("calendar")
+                )
+        );
+    }
+
+    @Test
+    void scheduleReminder_minimalDelay_executes() throws Exception {
+        long time = System.currentTimeMillis()
+                + (24L * 60 * 60 * 1000)
+                + 1;
+
+        manager.scheduleReminder("fast@test.com", 50, "FAST", time);
+
+        Thread.sleep(200);
+
+        verify(mockService).sendReminder(eq("fast@test.com"), anyString());
+    }
+}
