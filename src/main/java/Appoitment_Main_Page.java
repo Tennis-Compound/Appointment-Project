@@ -120,12 +120,12 @@ public class Appoitment_Main_Page {
      * @return the selected menu option
      */
 	private static int showMenu(Scanner input) {
-        LOGGER.info("\nEnter the number following what you want to do");
-        LOGGER.info("1- Administrator Login ");
-        LOGGER.info("2- User Login");
-        LOGGER.info("3- User Sign up");
-        LOGGER.info("4- View Available Appointment Slots");
-        LOGGER.info("0- Exit Program ");
+        System.out.println("\nEnter the number following what you want to do");
+        System.out.println("1- Administrator Login ");
+        System.out.println("2- User Login");
+        System.out.println("3- User Sign up");
+        System.out.println("4- View Available Appointment Slots");
+        System.out.println("0- Exit Program ");
         int choice = input.nextInt();
         input.nextLine();
         return choice;
@@ -152,9 +152,9 @@ public class Appoitment_Main_Page {
             return;
         }
  
-        LOGGER.info(ENTER_USERNAME);
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
-        LOGGER.info(ENTER_PASSWORD);
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         if (username.equals(adminUsername) && password.equals(adminPassword)) {
@@ -171,12 +171,12 @@ public class Appoitment_Main_Page {
      * @param input Scanner object for user input
      */
 	private static void adminMenu(Scanner input) {
-        LOGGER.info("\nAdministrator Menu");
-        LOGGER.info("1- Logout");
-        LOGGER.info("2- View All Reservations");
-        LOGGER.info("3- Cancel a Reservation");
-        LOGGER.info("4- Modify a Reservation");
-        LOGGER.info("5- Test Notifications");
+        System.out.println("\nAdministrator Menu");
+        System.out.println("1- Logout");
+        System.out.println("2- View All Reservations");
+        System.out.println("3- Cancel a Reservation");
+        System.out.println("4- Modify a Reservation");
+        System.out.println("5- Test Notifications");
         int choice = input.nextInt();
         input.nextLine();
         switch (choice) {
@@ -203,7 +203,7 @@ public class Appoitment_Main_Page {
      */
 	private static void testNotifications(Scanner input) {
         System.out.println("Testing Notification System");
-        LOGGER.info("Enter email to test (or press Enter for demo@example.com): ");
+        System.out.println("Enter email to test (or press Enter for demo@example.com): ");
         String email = input.nextLine();
         if (email.trim().isEmpty()) {
             email = "demo@example.com";
@@ -235,11 +235,11 @@ public class Appoitment_Main_Page {
                        "ORDER BY a.appointment_id";
         try (PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
-            LOGGER.info("\n=== All Reservations ===");
+            System.out.println("\n=== All Reservations ===");
             boolean found = false;
             while (rs.next()) {
                 found = true;
-                LOGGER.info(
+                System.out.println(
                     APPOINTMENT_ID2 + rs.getInt(APPOINTMENT_ID) +
                     " | Type: " + rs.getString(Appointment_Type) +
                     " | User: " + rs.getString("user_name") +
@@ -270,7 +270,7 @@ public class Appoitment_Main_Page {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info("Enter the Appointment ID you want to cancel: ");
+        System.out.println("Enter the Appointment ID you want to cancel: ");
         int appointmentId = input.nextInt();
         input.nextLine();
  
@@ -344,7 +344,7 @@ public class Appoitment_Main_Page {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info("Enter the Appointment ID you want to modify: ");
+        System.out.println("Enter the Appointment ID you want to modify: ");
         int appointmentId = input.nextInt();
         input.nextLine();
  
@@ -378,13 +378,13 @@ public class Appoitment_Main_Page {
             return;
         }
  
-        LOGGER.info("\nCurrent Appointment Details:");
-        LOGGER.info("User: " + userName);
-        LOGGER.info("Email: " + userEmail);
-        LOGGER.info("Current Slot: " + oldStartTime + " to " + oldEndTime);
-        LOGGER.info("\nAvailable Slots for Modification:");
+        System.out.println("\nCurrent Appointment Details:");
+        System.out.println("User: " + userName);
+        System.out.println("Email: " + userEmail);
+        System.out.println("Current Slot: " + oldStartTime + " to " + oldEndTime);
+        System.out.println("\nAvailable Slots for Modification:");
         viewAvailableSlots();
-        LOGGER.info("Enter the new Slot ID (or 0 to cancel): ");
+        System.out.println("Enter the new Slot ID (or 0 to cancel): ");
         int newSlotId = input.nextInt();
         input.nextLine();
         if (newSlotId == 0) {
@@ -462,9 +462,9 @@ public class Appoitment_Main_Page {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info(ENTER_USERNAME);
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
-        LOGGER.info(ENTER_PASSWORD);
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -497,11 +497,11 @@ public class Appoitment_Main_Page {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info(ENTER_USERNAME);
+        System.out.println(ENTER_USERNAME);
         String username = input.nextLine();
-        LOGGER.info("Enter Email: ");
+        System.out.println("Enter Email: ");
         String userEmail = input.nextLine();
-        LOGGER.info(ENTER_PASSWORD);
+        System.out.println(ENTER_PASSWORD);
         String password = input.nextLine();
  
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -531,14 +531,14 @@ public class Appoitment_Main_Page {
      */
 	 private static void userMenu(Scanner input) {
         while (true) {
-            LOGGER.info("\nUser Menu - Welcome " + loggedInUserName);
-            LOGGER.info("1- View Available Appointment Slots");
-            LOGGER.info("2- Show booking rules");
-            LOGGER.info("3- Book an Appointment");
-            LOGGER.info("4- View My Appointment");
-            LOGGER.info("5- Modify an appointment");
-            LOGGER.info("6- Cancel an appointment");
-            LOGGER.info("0- Logout");
+            System.out.println("\nUser Menu - Welcome " + loggedInUserName);
+            System.out.println("1- View Available Appointment Slots");
+            System.out.println("2- Show booking rules");
+            System.out.println("3- Book an Appointment");
+            System.out.println("4- View My Appointment");
+            System.out.println("5- Modify an appointment");
+            System.out.println("6- Cancel an appointment");
+            System.out.println("0- Logout");
             int choice = input.nextInt();
             input.nextLine();
             switch (choice) {
@@ -572,14 +572,14 @@ public class Appoitment_Main_Page {
      * </ul>
      */
 	private static void showBookingRules() {
-        LOGGER.info("\nBooking Rules by Appointment Type:");
-        LOGGER.info("URGENT      -> duration must be 30 minutes or less");
-        LOGGER.info("FOLLOW_UP   -> duration must be 30 minutes or less");
-        LOGGER.info("ASSESSMENT  -> duration must be at least 60 minutes");
-        LOGGER.info("VIRTUAL     -> no physical location is required");
-        LOGGER.info("IN_PERSON   -> physical location is required");
-        LOGGER.info("INDIVIDUAL  -> participant count must be exactly 1");
-        LOGGER.info("GROUP       -> participant count must be more than 1");
+        System.out.println("\nBooking Rules by Appointment Type:");
+        System.out.println("URGENT      -> duration must be 30 minutes or less");
+        System.out.println("FOLLOW_UP   -> duration must be 30 minutes or less");
+        System.out.println("ASSESSMENT  -> duration must be at least 60 minutes");
+        System.out.println("VIRTUAL     -> no physical location is required");
+        System.out.println("IN_PERSON   -> physical location is required");
+        System.out.println("INDIVIDUAL  -> participant count must be exactly 1");
+        System.out.println("GROUP       -> participant count must be more than 1");
     }
 	
 	/**
@@ -595,11 +595,11 @@ public class Appoitment_Main_Page {
         }
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM \"TimeSlots\" WHERE is_available = 'true'")) {
-            LOGGER.info("\n Available Appointment Slots:");
+            System.out.println("\n Available Appointment Slots:");
             boolean found = false;
             while (rs.next()) {
                 found = true;
-                LOGGER.info("ID: " + rs.getInt(SLOT_ID) +
+                System.out.println("ID: " + rs.getInt(SLOT_ID) +
                         START + rs.getTimestamp(START_DATETIME) +
                         END + rs.getTimestamp(END_DATETIME));
             }
@@ -626,18 +626,18 @@ public class Appoitment_Main_Page {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info("Enter the slot ID you want to book: ");
+        System.out.println("Enter the slot ID you want to book: ");
         int slotID = input.nextInt();
         input.nextLine();
  
-        LOGGER.info("Choose appointment type:");
-        LOGGER.info("1- URGENT");
-        LOGGER.info("2- FOLLOW_UP");
-        LOGGER.info("3- ASSESSMENT");
-        LOGGER.info("4- VIRTUAL");
-        LOGGER.info("5- IN_PERSON");
-        LOGGER.info("6- INDIVIDUAL");
-        LOGGER.info("7- GROUP");
+        System.out.println("Choose appointment type:");
+        System.out.println("1- URGENT");
+        System.out.println("2- FOLLOW_UP");
+        System.out.println("3- ASSESSMENT");
+        System.out.println("4- VIRTUAL");
+        System.out.println("5- IN_PERSON");
+        System.out.println("6- INDIVIDUAL");
+        System.out.println("7- GROUP");
         int typeChoice = input.nextInt();
         input.nextLine();
  
@@ -655,13 +655,13 @@ public class Appoitment_Main_Page {
                 return;
         }
  
-        LOGGER.info("Enter duration in minutes: ");
+        System.out.println("Enter duration in minutes: ");
         int durationMinutes = input.nextInt();
         input.nextLine();
-        LOGGER.info("Enter number of participants: ");
+        System.out.println("Enter number of participants: ");
         int participantCount = input.nextInt();
         input.nextLine();
-        LOGGER.info("Enter location (leave empty for none): ");
+        System.out.println("Enter location (leave empty for none): ");
         String location = input.nextLine();
  
         AppointmentRequest request = new AppointmentRequest(appointmentType, durationMinutes, participantCount, location);
@@ -748,13 +748,13 @@ public class Appoitment_Main_Page {
                 "WHERE a.user_id = ?")) {
             stmt.setInt(1, loggedInUserId);
             try (ResultSet rs = stmt.executeQuery()) {
-                LOGGER.info("\nYour Appointments:");
+                System.out.println("\nYour Appointments:");
                 boolean found = false;
                 while (rs.next()) {
                     found = true;
                     Timestamp start = rs.getTimestamp(START_DATETIME);
                     String status = start.before(new Timestamp(System.currentTimeMillis())) ? "PAST" : "UPCOMING";
-                    LOGGER.info(
+                    System.out.println(
                         APPOINTMENT_ID2 + rs.getInt(APPOINTMENT_ID) +
                         " | Type: " + rs.getString(Appointment_Type) +
                         START + start +
@@ -792,7 +792,7 @@ private static void modifyAppointment(Scanner input) {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info("Enter the Appointment ID you want to modify: ");
+        System.out.println("Enter the Appointment ID you want to modify: ");
         int appointmentId = input.nextInt();
         input.nextLine();
  
@@ -828,14 +828,14 @@ private static void modifyAppointment(Scanner input) {
             return;
         }
  
-        LOGGER.info("\nCurrent Appointment Details:");
-        LOGGER.info("User: " + userName);
-        LOGGER.info("Email: " + userEmail);
-        LOGGER.info(TYPE + oldAppointmentType);
-        LOGGER.info("Current Slot: " + oldStartTime + " to " + oldEndTime);
-        LOGGER.info("\nAvailable Slots for Modification:");
+        System.out.println("\nCurrent Appointment Details:");
+        System.out.println("User: " + userName);
+        System.out.println("Email: " + userEmail);
+        System.out.println(TYPE + oldAppointmentType);
+        System.out.println("Current Slot: " + oldStartTime + " to " + oldEndTime);
+        System.out.println("\nAvailable Slots for Modification:");
         viewAvailableSlots();
-        LOGGER.info("Enter the new Slot ID (or 0 to cancel): ");
+        System.out.println("Enter the new Slot ID (or 0 to cancel): ");
         int newSlotId = input.nextInt();
         input.nextLine();
         if (newSlotId == 0) {
@@ -911,7 +911,7 @@ private static void modifyAppointment(Scanner input) {
         notificationManager.scheduleReminder(userEmail, appointmentId, appointmentDetails, newStartTime.getTime());
  
         System.out.println("Appointment modified successfully! Email sent to: " + userEmail);
-        LOGGER.info("New appointment time: " + newStartTime + " to " + newEndTime);
+        System.out.println("New appointment time: " + newStartTime + " to " + newEndTime);
     }
 	
 	/**
@@ -928,7 +928,7 @@ private static void modifyAppointment(Scanner input) {
             System.out.println(CANNOT_CONNECT);
             return;
         }
-        LOGGER.info("Enter the Appointment ID you want to cancel: ");
+        System.out.println("Enter the Appointment ID you want to cancel: ");
         int appointmentId = input.nextInt();
         input.nextLine();
  
