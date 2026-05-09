@@ -29,22 +29,22 @@ public class Appoitment_Main_Page {
 	private static final String ENTER_USERNAME = "Enter username: ";
 	private static final String ENTER_PASSWORD = "Enter password: ";
 	private static final String CANNOT_CONNECT = "Cannot connect to database.";
-	private static final String AppointmentID = "appointment_id";
-	private static final String AppointmentID2 = "Appointment ID: ";
-	private static final String AppointmentType = "appointment_type";
-	private static final String Email = "email";
-	private static final String StartDatetime = "start_datetime";
-	private static final String Start = " | Start: ";
-	private static final String EndDatetime = "end_datetime";
-	private static final String End = " | End: ";
-	private static final String SlotID = "slot_id";
-	private static final String ErrorDB = "Error fetching appointment: ";
-	private static final String UpdateSmnt = "UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?";
-	private static final String Date = "\nDate: ";
-	private static final String Time = "\nTime: ";
-	private static final String ErrorFetching = "Error checking slot: ";
-	private static final String UpdateStmnt2 = "UPDATE \"TimeSlots\" SET is_available = false WHERE slot_id = ?";
-	private static final String Type = "Type: ";
+	private static final String APPOINTMENT_ID = "appointment_id";
+	private static final String APPOINTMENT_ID2 = "Appointment ID: ";
+	private static final String Appointment_Type = "appointment_type";
+	private static final String EMAIL = "email";
+	private static final String START_DATETIME = "start_datetime";
+	private static final String START = " | Start: ";
+	private static final String END_DATETIME = "end_datetime";
+	private static final String END = " | End: ";
+	private static final String SLOT_ID = "slot_id";
+	private static final String ERROR_DB = "Error fetching appointment: ";
+	private static final String UPDATE_STMNT = "UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?";
+	private static final String DATE = "\nDate: ";
+	private static final String TIME = "\nTime: ";
+	private static final String ERROR_FETCHING = "Error checking slot: ";
+	private static final String UPDATE_STMNT2 = "UPDATE \"TimeSlots\" SET is_available = false WHERE slot_id = ?";
+	private static final String TYPE = "Type: ";
 	/**
      * Entry point of the application.
      * 
@@ -240,12 +240,12 @@ public class Appoitment_Main_Page {
             while (rs.next()) {
                 found = true;
                 System.out.println(
-                    AppointmentID2 + rs.getInt(AppointmentID) +
-                    " | Type: " + rs.getString(AppointmentType) +
+                    APPOINTMENT_ID2 + rs.getInt(APPOINTMENT_ID) +
+                    " | Type: " + rs.getString(Appointment_Type) +
                     " | User: " + rs.getString("user_name") +
-                    " | Email: " + rs.getString(Email) +
-                    Start + rs.getTimestamp(StartDatetime) +
-                    End + rs.getTimestamp(EndDatetime)
+                    " | Email: " + rs.getString(EMAIL) +
+                    START + rs.getTimestamp(START_DATETIME) +
+                    END + rs.getTimestamp(END_DATETIME)
                 );
             }
             if (!found) {
@@ -291,13 +291,13 @@ public class Appoitment_Main_Page {
                     System.out.println("Appointment not found.");
                     return;
                 }
-                slotId = detailsRs.getInt(SlotID);
-                userEmail = detailsRs.getString(Email);
-                startTime = detailsRs.getTimestamp(StartDatetime);
-                endTime = detailsRs.getTimestamp(EndDatetime);
+                slotId = detailsRs.getInt(SLOT_ID);
+                userEmail = detailsRs.getString(EMAIL);
+                startTime = detailsRs.getTimestamp(START_DATETIME);
+                endTime = detailsRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorDB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -307,13 +307,13 @@ public class Appoitment_Main_Page {
             int rowsAffected = deleteStmt.executeUpdate();
             if (rowsAffected > 0) {
                 try (PreparedStatement updateStmt = conn.prepareStatement(
-                        UpdateSmnt)) {
+                        UPDATE_STMNT)) {
                     updateStmt.setInt(1, slotId);
                     updateStmt.executeUpdate();
                 }
-                String appointmentDetails = AppointmentID2 + appointmentId +
-                                            Date + startTime +
-                                            Time + startTime + " - " + endTime;
+                String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
+                                            DATE + startTime +
+                                            TIME + startTime + " - " + endTime;
                 notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
                 notificationManager.cancelReminder(appointmentId);
                 System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
@@ -367,14 +367,14 @@ public class Appoitment_Main_Page {
                     System.out.println("Appointment not found.");
                     return;
                 }
-                oldSlotId = apptRs.getInt(SlotID);
-                userEmail = apptRs.getString(Email);
+                oldSlotId = apptRs.getInt(SLOT_ID);
+                userEmail = apptRs.getString(EMAIL);
                 userName = apptRs.getString("user_name");
-                oldStartTime = apptRs.getTimestamp(StartDatetime);
-                oldEndTime = apptRs.getTimestamp(EndDatetime);
+                oldStartTime = apptRs.getTimestamp(START_DATETIME);
+                oldEndTime = apptRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorDB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -405,11 +405,11 @@ public class Appoitment_Main_Page {
                     return;
                 }
                 isAvailable = slotRs.getBoolean("is_available");
-                newStartTime = slotRs.getTimestamp(StartDatetime);
-                newEndTime = slotRs.getTimestamp(EndDatetime);
+                newStartTime = slotRs.getTimestamp(START_DATETIME);
+                newEndTime = slotRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorFetching + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
@@ -429,7 +429,7 @@ public class Appoitment_Main_Page {
         }
  
         try (PreparedStatement freeOldSlotStmt = conn.prepareStatement(
-                UpdateSmnt)) {
+                UPDATE_STMNT)) {
             freeOldSlotStmt.setInt(1, oldSlotId);
             freeOldSlotStmt.executeUpdate();
         } catch (SQLException e) {
@@ -437,15 +437,15 @@ public class Appoitment_Main_Page {
         }
  
         try (PreparedStatement bookNewSlotStmt = conn.prepareStatement(
-                UpdateStmnt2)) {
+                UPDATE_STMNT2)) {
             bookNewSlotStmt.setInt(1, newSlotId);
             bookNewSlotStmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error booking new slot: " + e.getMessage());
         }
  
-        String oldDetails = "Date: " + oldStartTime + Time + oldStartTime + " - " + oldEndTime;
-        String newDetails = "Date: " + newStartTime + Time + newStartTime + " - " + newEndTime;
+        String oldDetails = "Date: " + oldStartTime + TIME + oldStartTime + " - " + oldEndTime;
+        String newDetails = "Date: " + newStartTime + TIME + newStartTime + " - " + newEndTime;
         notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
         notificationManager.cancelReminder(appointmentId);
         System.out.println("Reservation modified successfully! Email sent to: " + userEmail);
@@ -599,9 +599,9 @@ public class Appoitment_Main_Page {
             boolean found = false;
             while (rs.next()) {
                 found = true;
-                System.out.println("ID: " + rs.getInt(SlotID) +
-                        Start + rs.getTimestamp(StartDatetime) +
-                        End + rs.getTimestamp(EndDatetime));
+                System.out.println("ID: " + rs.getInt(SLOT_ID) +
+                        START + rs.getTimestamp(START_DATETIME) +
+                        END + rs.getTimestamp(END_DATETIME));
             }
             if (!found) {
                 System.out.println("No available slots found.");
@@ -682,11 +682,11 @@ public class Appoitment_Main_Page {
                     System.out.println("Slot not available, does not exist, or is in the past.");
                     return;
                 }
-                startTime = rs.getTimestamp(StartDatetime);
-                endTime = rs.getTimestamp(EndDatetime);
+                startTime = rs.getTimestamp(START_DATETIME);
+                endTime = rs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorFetching + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
@@ -697,10 +697,10 @@ public class Appoitment_Main_Page {
             bookStmt.setString(3, appointmentType);
             try (ResultSet bookRs = bookStmt.executeQuery()) {
                 if (bookRs.next()) {
-                    int appointmentId = bookRs.getInt(AppointmentID);
+                    int appointmentId = bookRs.getInt(APPOINTMENT_ID);
  
                     try (PreparedStatement updateStmt = conn.prepareStatement(
-                            UpdateStmnt2)) {
+                            UPDATE_STMNT2)) {
                         updateStmt.setInt(1, slotID);
                         updateStmt.executeUpdate();
                     }
@@ -710,13 +710,13 @@ public class Appoitment_Main_Page {
                         userStmt.setInt(1, loggedInUserId);
                         try (ResultSet userRs = userStmt.executeQuery()) {
                             if (userRs.next()) {
-                                String userEmail = userRs.getString(Email);
-                                String appointmentDetails = AppointmentID2 + appointmentId +
+                                String userEmail = userRs.getString(EMAIL);
+                                String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
                                         "\nType: " + appointmentType +
                                         "\nDuration: " + durationMinutes + " minutes" +
                                         "\nParticipants: " + participantCount +
                                         "\nLocation: " + (location.isEmpty() ? "None" : location) +
-                                        Date + startTime +
+                                        DATE + startTime +
                                         Time + startTime + " - " + endTime;
                                 notificationManager.sendBookingConfirmation(userEmail, appointmentDetails);
                                 notificationManager.scheduleReminder(userEmail, appointmentId,
@@ -752,13 +752,13 @@ public class Appoitment_Main_Page {
                 boolean found = false;
                 while (rs.next()) {
                     found = true;
-                    Timestamp start = rs.getTimestamp(StartDatetime);
+                    Timestamp start = rs.getTimestamp(START_DATETIME);
                     String status = start.before(new Timestamp(System.currentTimeMillis())) ? "PAST" : "UPCOMING";
                     System.out.println(
-                        AppointmentID2 + rs.getInt(AppointmentID) +
-                        " | Type: " + rs.getString(AppointmentType) +
-                        Start + start +
-                        End + rs.getTimestamp(EndDatetime) +
+                        APPOINTMENT_ID2 + rs.getInt(APPOINTMENT_ID) +
+                        " | Type: " + rs.getString(Appointment_Type) +
+                        START + start +
+                        END + rs.getTimestamp(END_DATETIME) +
                         " | Status: " + status
                     );
                 }
@@ -816,22 +816,22 @@ private static void modifyAppointment(Scanner input) {
                     System.out.println("Appointment not found, belongs to another user, or cannot be modified.");
                     return;
                 }
-                oldSlotId = apptRs.getInt(SlotID);
-                userEmail = apptRs.getString(Email);
+                oldSlotId = apptRs.getInt(SLOT_ID);
+                userEmail = apptRs.getString(EMAIL);
                 userName = apptRs.getString("name");
-                oldStartTime = apptRs.getTimestamp(StartDatetime);
-                oldEndTime = apptRs.getTimestamp(EndDatetime);
-                oldAppointmentType = apptRs.getString(AppointmentType);
+                oldStartTime = apptRs.getTimestamp(START_DATETIME);
+                oldEndTime = apptRs.getTimestamp(END_DATETIME);
+                oldAppointmentType = apptRs.getString(Appointment_Type);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorDB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
         System.out.println("\nCurrent Appointment Details:");
         System.out.println("User: " + userName);
         System.out.println("Email: " + userEmail);
-        System.out.println(Type + oldAppointmentType);
+        System.out.println(TYPE + oldAppointmentType);
         System.out.println("Current Slot: " + oldStartTime + " to " + oldEndTime);
         System.out.println("\nAvailable Slots for Modification:");
         viewAvailableSlots();
@@ -856,11 +856,11 @@ private static void modifyAppointment(Scanner input) {
                     return;
                 }
                 isAvailable = slotRs.getBoolean("is_available");
-                newStartTime = slotRs.getTimestamp(StartDatetime);
-                newEndTime = slotRs.getTimestamp(EndDatetime);
+                newStartTime = slotRs.getTimestamp(START_DATETIME);
+                newEndTime = slotRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorFetching + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
@@ -884,7 +884,7 @@ private static void modifyAppointment(Scanner input) {
         }
  
         try (PreparedStatement freeOldSlotStmt = conn.prepareStatement(
-                UpdateSmnt)) {
+                UPDATE_STMNT)) {
             freeOldSlotStmt.setInt(1, oldSlotId);
             freeOldSlotStmt.executeUpdate();
         } catch (SQLException e) {
@@ -892,22 +892,22 @@ private static void modifyAppointment(Scanner input) {
         }
  
         try (PreparedStatement bookNewSlotStmt = conn.prepareStatement(
-                UpdateStmnt2)) {
+                UPDATE_STMNT2)) {
             bookNewSlotStmt.setInt(1, newSlotId);
             bookNewSlotStmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error booking new slot: " + e.getMessage());
         }
  
-        String oldDetails = Type + oldAppointmentType + Date + oldStartTime + Time + oldStartTime + " - " + oldEndTime;
-        String newDetails = Type + oldAppointmentType + Date + newStartTime + Time + newStartTime + " - " + newEndTime;
+        String oldDetails = TYPE + oldAppointmentType + DATE + oldStartTime + TIME + oldStartTime + " - " + oldEndTime;
+        String newDetails = TYPE + oldAppointmentType + DATE + newStartTime + TIME + newStartTime + " - " + newEndTime;
         notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
         notificationManager.cancelReminder(appointmentId);
  
-        String appointmentDetails = AppointmentID2 + appointmentId +
+        String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
                 "\nType: " + oldAppointmentType +
-                Date + newStartTime +
-                Time + newStartTime + " - " + newEndTime;
+                DATE + newStartTime +
+                TIME + newStartTime + " - " + newEndTime;
         notificationManager.scheduleReminder(userEmail, appointmentId, appointmentDetails, newStartTime.getTime());
  
         System.out.println("Appointment modified successfully! Email sent to: " + userEmail);
@@ -950,13 +950,13 @@ private static void modifyAppointment(Scanner input) {
                     System.out.println("Appointment not found or does not belong to you.");
                     return;
                 }
-                slotId = rs.getInt(SlotID);
-                userEmail = rs.getString(Email);
-                startTime = rs.getTimestamp(StartDatetime);
-                endTime = rs.getTimestamp(EndDatetime);
+                slotId = rs.getInt(SLOT_ID);
+                userEmail = rs.getString(EMAIL);
+                startTime = rs.getTimestamp(START_DATETIME);
+                endTime = rs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            System.out.println(ErrorDB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -970,16 +970,16 @@ private static void modifyAppointment(Scanner input) {
         }
  
         try (PreparedStatement freeStmt = conn.prepareStatement(
-                UpdateSmnt)) {
+                UPDATE_STMNT)) {
             freeStmt.setInt(1, slotId);
             freeStmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error freeing slot: " + e.getMessage());
         }
  
-        String appointmentDetails = AppointmentID2 + appointmentId +
-                Date + startTime +
-                Time + startTime + " - " + endTime;
+        String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
+                DATE + startTime +
+                TIME + startTime + " - " + endTime;
         notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
         notificationManager.cancelReminder(appointmentId);
         System.out.println("Appointment cancelled successfully! Email sent to: " + userEmail);
