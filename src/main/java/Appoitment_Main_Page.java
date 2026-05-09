@@ -65,11 +65,11 @@ public class Appoitment_Main_Page {
                     case 3: userSignUp(input); break;
                     case 4: viewAvailableSlots(); break;
                     case 0:
-                        LOGGER.info("Exiting system. Goodbye!");
+                        System.out.println("Exiting system. Goodbye!");
                         DatabaseConnection.closeConnection();
                         input.close();
                         return;
-                    default: LOGGER.info("Invalid choice. Try again.");
+                    default: System.out.println("Invalid choice. Try again.");
                 }
             } else {
                 adminMenu(input);
@@ -86,7 +86,7 @@ public class Appoitment_Main_Page {
 	private static void initializeNotificationService() {
         if (useMockNotifications) {
             notificationManager = new NotificationManager(new MockNotificationService());
-            LOGGER.info("Using mock notification service for testing");
+            System.out.println("Using mock notification service for testing");
         } else {
             try {
                 Dotenv dotenv = Dotenv.configure()
@@ -101,13 +101,13 @@ public class Appoitment_Main_Page {
                     EmailNotificationService emailService = new EmailNotificationService(
                             smtpHost, smtpPort, smtpUsername, smtpPassword);
                     notificationManager = new NotificationManager(emailService);
-                    LOGGER.info("Email notification service initialized for: " + smtpUsername);
+                    System.out.println("Email notification service initialized for: " + smtpUsername);
                 } else {
-                    LOGGER.info("Email configuration incomplete, using mock service");
+                    System.out.println("Email configuration incomplete, using mock service");
                     notificationManager = new NotificationManager(new MockNotificationService());
                 }
             } catch (Exception e) {
-                LOGGER.info("Failed to initialize email service, using mock: " + e.getMessage());
+                System.out.println("Failed to initialize email service, using mock: " + e.getMessage());
                 notificationManager = new NotificationManager(new MockNotificationService());
             }
         }
@@ -148,7 +148,7 @@ public class Appoitment_Main_Page {
         String adminPassword = dotenv.get("adminpassword");
  
         if (adminUsername == null || adminPassword == null) {
-            LOGGER.info("Admin credentials not configured.");
+            System.out.println("Admin credentials not configured.");
             return;
         }
  
@@ -158,10 +158,10 @@ public class Appoitment_Main_Page {
         String password = input.nextLine();
  
         if (username.equals(adminUsername) && password.equals(adminPassword)) {
-            LOGGER.info("Login Successful");
+            System.out.println("Login Successful");
             isLoggedIn = true;
         } else {
-            LOGGER.info("Invalid Credentials");
+            System.out.println("Invalid Credentials");
         }
     }
 	
@@ -182,13 +182,13 @@ public class Appoitment_Main_Page {
         switch (choice) {
             case 1:
                 isLoggedIn = false;
-                LOGGER.info("You have been logged out successfully");
+                System.out.println("You have been logged out successfully");
                 break;
             case 2: adminViewAllReservations(); break;
             case 3: adminCancelReservation(input); break;
             case 4: adminModifyReservation(input); break;
             case 5: testNotifications(input); break;
-            default: LOGGER.info("Invalid option.");
+            default: System.out.println("Invalid option.");
         }
     }
 	
@@ -202,18 +202,18 @@ public class Appoitment_Main_Page {
      * @param input Scanner object for user input
      */
 	private static void testNotifications(Scanner input) {
-        LOGGER.info("Testing Notification System");
+        System.out.println("Testing Notification System");
         LOGGER.info("Enter email to test (or press Enter for demo@example.com): ");
         String email = input.nextLine();
         if (email.trim().isEmpty()) {
             email = "demo@example.com";
         }
         String testMessage = "This is a test notification from the Appointment System.";
-        LOGGER.info("Sending booking confirmation to: " + email);
+        System.out.println("Sending booking confirmation to: " + email);
         notificationManager.sendBookingConfirmation(email, testMessage);
-        LOGGER.info("Sending cancellation notice to: " + email);
+        System.out.println("Sending cancellation notice to: " + email);
         notificationManager.sendCancellationNotice(email, testMessage);
-        LOGGER.info("Test notifications sent! Check your email inbox.");
+        System.out.println("Test notifications sent! Check your email inbox.");
     }
 	
 	/**
@@ -224,7 +224,7 @@ public class Appoitment_Main_Page {
 	private static void adminViewAllReservations() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         String query = "SELECT a.appointment_id, a.appointment_type, u.name AS user_name, u.email, " +
@@ -249,10 +249,10 @@ public class Appoitment_Main_Page {
                 );
             }
             if (!found) {
-                LOGGER.info("No reservations found.");
+                System.out.println("No reservations found.");
             }
         } catch (SQLException e) {
-            LOGGER.info("Error fetching reservations: " + e.getMessage());
+            System.out.println("Error fetching reservations: " + e.getMessage());
         }
     }
 	
@@ -267,7 +267,7 @@ public class Appoitment_Main_Page {
         adminViewAllReservations();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info("Enter the Appointment ID you want to cancel: ");
@@ -288,7 +288,7 @@ public class Appoitment_Main_Page {
             getDetailsStmt.setInt(1, appointmentId);
             try (ResultSet detailsRs = getDetailsStmt.executeQuery()) {
                 if (!detailsRs.next()) {
-                    LOGGER.info("Appointment not found.");
+                    System.out.println("Appointment not found.");
                     return;
                 }
                 slotId = detailsRs.getInt(SLOT_ID);
@@ -297,7 +297,7 @@ public class Appoitment_Main_Page {
                 endTime = detailsRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_DB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -316,12 +316,12 @@ public class Appoitment_Main_Page {
                                             TIME + startTime + " - " + endTime;
                 notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
                 notificationManager.cancelReminder(appointmentId);
-                LOGGER.info("Reservation cancelled successfully! Email sent to: " + userEmail);
+                System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
             } else {
-                LOGGER.info("Failed to cancel reservation.");
+                System.out.println("Failed to cancel reservation.");
             }
         } catch (SQLException e) {
-            LOGGER.info("Error cancelling reservation: " + e.getMessage());
+            System.out.println("Error cancelling reservation: " + e.getMessage());
         }
     }
 	
@@ -341,7 +341,7 @@ public class Appoitment_Main_Page {
         adminViewAllReservations();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info("Enter the Appointment ID you want to modify: ");
@@ -364,7 +364,7 @@ public class Appoitment_Main_Page {
             getApptStmt.setInt(1, appointmentId);
             try (ResultSet apptRs = getApptStmt.executeQuery()) {
                 if (!apptRs.next()) {
-                    LOGGER.info("Appointment not found.");
+                    System.out.println("Appointment not found.");
                     return;
                 }
                 oldSlotId = apptRs.getInt(SLOT_ID);
@@ -374,7 +374,7 @@ public class Appoitment_Main_Page {
                 oldEndTime = apptRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_DB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -388,7 +388,7 @@ public class Appoitment_Main_Page {
         int newSlotId = input.nextInt();
         input.nextLine();
         if (newSlotId == 0) {
-            LOGGER.info("Modification cancelled.");
+            System.out.println("Modification cancelled.");
             return;
         }
  
@@ -401,7 +401,7 @@ public class Appoitment_Main_Page {
             checkSlotStmt.setInt(1, newSlotId);
             try (ResultSet slotRs = checkSlotStmt.executeQuery()) {
                 if (!slotRs.next()) {
-                    LOGGER.info("Invalid slot ID.");
+                    System.out.println("Invalid slot ID.");
                     return;
                 }
                 isAvailable = slotRs.getBoolean("is_available");
@@ -409,12 +409,12 @@ public class Appoitment_Main_Page {
                 newEndTime = slotRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_FETCHING + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
         if (!isAvailable) {
-            LOGGER.info("Selected slot is not available.");
+            System.out.println("Selected slot is not available.");
             return;
         }
  
@@ -424,7 +424,7 @@ public class Appoitment_Main_Page {
             updateApptStmt.setInt(2, appointmentId);
             updateApptStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error updating appointment: " + e.getMessage());
+            System.out.println("Error updating appointment: " + e.getMessage());
             return;
         }
  
@@ -433,7 +433,7 @@ public class Appoitment_Main_Page {
             freeOldSlotStmt.setInt(1, oldSlotId);
             freeOldSlotStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error freeing old slot: " + e.getMessage());
+            System.out.println("Error freeing old slot: " + e.getMessage());
         }
  
         try (PreparedStatement bookNewSlotStmt = conn.prepareStatement(
@@ -441,14 +441,14 @@ public class Appoitment_Main_Page {
             bookNewSlotStmt.setInt(1, newSlotId);
             bookNewSlotStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error booking new slot: " + e.getMessage());
+            System.out.println("Error booking new slot: " + e.getMessage());
         }
  
         String oldDetails = "Date: " + oldStartTime + TIME + oldStartTime + " - " + oldEndTime;
         String newDetails = "Date: " + newStartTime + TIME + newStartTime + " - " + newEndTime;
         notificationManager.sendModificationNotice(userEmail, oldDetails, newDetails);
         notificationManager.cancelReminder(appointmentId);
-        LOGGER.info("Reservation modified successfully! Email sent to: " + userEmail);
+        System.out.println("Reservation modified successfully! Email sent to: " + userEmail);
     }
 	
 	/**
@@ -459,7 +459,7 @@ public class Appoitment_Main_Page {
 	 private static void userLogin(Scanner input) {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info(ENTER_USERNAME);
@@ -475,14 +475,14 @@ public class Appoitment_Main_Page {
                 if (rs.next()) {
                     loggedInUserId = rs.getInt("user_id");
                     loggedInUserName = rs.getString("name");
-                    LOGGER.info("Login Successful, Welcome " + loggedInUserName);
+                    System.out.println("Login Successful, Welcome " + loggedInUserName);
                     userMenu(input);
                 } else {
-                    LOGGER.info("Invalid username or password");
+                    System.out.println("Invalid username or password");
                 }
             }
         } catch (SQLException e) {
-            LOGGER.info("Error during login: " + e.getMessage());
+            System.out.println("Error during login: " + e.getMessage());
         }
     }
 	
@@ -551,9 +551,9 @@ public class Appoitment_Main_Page {
                 case 0:
                     loggedInUserId = -1;
                     loggedInUserName = "";
-                    LOGGER.info("Logged out successfully");
+                    System.out.println("Logged out successfully");
                     return;
-                default: LOGGER.info("Invalid option.");
+                default: System.out.println("Invalid option.");
             }
         }
     }
@@ -590,7 +590,7 @@ public class Appoitment_Main_Page {
 	private static void viewAvailableSlots() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         try (Statement stmt = conn.createStatement();
@@ -604,10 +604,10 @@ public class Appoitment_Main_Page {
                         END + rs.getTimestamp(END_DATETIME));
             }
             if (!found) {
-                LOGGER.info("No available slots found.");
+                System.out.println("No available slots found.");
             }
         } catch (SQLException e) {
-            LOGGER.info("Error fetching slots: " + e.getMessage());
+            System.out.println("Error fetching slots: " + e.getMessage());
         }
     }
 	
@@ -728,7 +728,7 @@ public class Appoitment_Main_Page {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.info("Error booking appointment: " + e.getMessage());
+            System.out.println("Error booking appointment: " + e.getMessage());
         }
     }
 	
@@ -738,7 +738,7 @@ public class Appoitment_Main_Page {
 	private static void viewMyAppointments() {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         try (PreparedStatement stmt = conn.prepareStatement(
@@ -763,11 +763,11 @@ public class Appoitment_Main_Page {
                     );
                 }
                 if (!found) {
-                    LOGGER.info("You have no appointments.");
+                    System.out.println("You have no appointments.");
                 }
             }
         } catch (SQLException e) {
-            LOGGER.info("Error fetching appointments: " + e.getMessage());
+            System.out.println("Error fetching appointments: " + e.getMessage());
         }
     }
 
@@ -789,7 +789,7 @@ private static void modifyAppointment(Scanner input) {
         viewMyAppointments();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info("Enter the Appointment ID you want to modify: ");
@@ -813,7 +813,7 @@ private static void modifyAppointment(Scanner input) {
             getApptStmt.setInt(2, loggedInUserId);
             try (ResultSet apptRs = getApptStmt.executeQuery()) {
                 if (!apptRs.next()) {
-                    LOGGER.info("Appointment not found, belongs to another user, or cannot be modified.");
+                    System.out.println("Appointment not found, belongs to another user, or cannot be modified.");
                     return;
                 }
                 oldSlotId = apptRs.getInt(SLOT_ID);
@@ -824,7 +824,7 @@ private static void modifyAppointment(Scanner input) {
                 oldAppointmentType = apptRs.getString(Appointment_Type);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_DB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -839,7 +839,7 @@ private static void modifyAppointment(Scanner input) {
         int newSlotId = input.nextInt();
         input.nextLine();
         if (newSlotId == 0) {
-            LOGGER.info("Modification cancelled.");
+            System.out.println("Modification cancelled.");
             return;
         }
  
@@ -852,7 +852,7 @@ private static void modifyAppointment(Scanner input) {
             checkSlotStmt.setInt(1, newSlotId);
             try (ResultSet slotRs = checkSlotStmt.executeQuery()) {
                 if (!slotRs.next()) {
-                    LOGGER.info("Invalid slot ID, slot not available, or slot is in the past.");
+                    System.out.println("Invalid slot ID, slot not available, or slot is in the past.");
                     return;
                 }
                 isAvailable = slotRs.getBoolean("is_available");
@@ -860,12 +860,12 @@ private static void modifyAppointment(Scanner input) {
                 newEndTime = slotRs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_FETCHING + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
         if (!isAvailable) {
-            LOGGER.info("Selected slot is not available.");
+            System.out.println("Selected slot is not available.");
             return;
         }
  
@@ -875,11 +875,11 @@ private static void modifyAppointment(Scanner input) {
             updateApptStmt.setInt(2, appointmentId);
             int rowsUpdated = updateApptStmt.executeUpdate();
             if (rowsUpdated <= 0) {
-                LOGGER.info("Failed to modify appointment.");
+                System.out.println("Failed to modify appointment.");
                 return;
             }
         } catch (SQLException e) {
-            LOGGER.info("Error updating appointment: " + e.getMessage());
+            System.out.println("Error updating appointment: " + e.getMessage());
             return;
         }
  
@@ -888,7 +888,7 @@ private static void modifyAppointment(Scanner input) {
             freeOldSlotStmt.setInt(1, oldSlotId);
             freeOldSlotStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error freeing old slot: " + e.getMessage());
+            System.out.println("Error freeing old slot: " + e.getMessage());
         }
  
         try (PreparedStatement bookNewSlotStmt = conn.prepareStatement(
@@ -896,7 +896,7 @@ private static void modifyAppointment(Scanner input) {
             bookNewSlotStmt.setInt(1, newSlotId);
             bookNewSlotStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error booking new slot: " + e.getMessage());
+            System.out.println("Error booking new slot: " + e.getMessage());
         }
  
         String oldDetails = TYPE + oldAppointmentType + DATE + oldStartTime + TIME + oldStartTime + " - " + oldEndTime;
@@ -910,7 +910,7 @@ private static void modifyAppointment(Scanner input) {
                 TIME + newStartTime + " - " + newEndTime;
         notificationManager.scheduleReminder(userEmail, appointmentId, appointmentDetails, newStartTime.getTime());
  
-        LOGGER.info("Appointment modified successfully! Email sent to: " + userEmail);
+        System.out.println("Appointment modified successfully! Email sent to: " + userEmail);
         LOGGER.info("New appointment time: " + newStartTime + " to " + newEndTime);
     }
 	
@@ -925,7 +925,7 @@ private static void modifyAppointment(Scanner input) {
         viewMyAppointments();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info("Enter the Appointment ID you want to cancel: ");
@@ -947,7 +947,7 @@ private static void modifyAppointment(Scanner input) {
             getStmt.setInt(2, loggedInUserId);
             try (ResultSet rs = getStmt.executeQuery()) {
                 if (!rs.next()) {
-                    LOGGER.info("Appointment not found or does not belong to you.");
+                    System.out.println("Appointment not found or does not belong to you.");
                     return;
                 }
                 slotId = rs.getInt(SLOT_ID);
@@ -956,7 +956,7 @@ private static void modifyAppointment(Scanner input) {
                 endTime = rs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_DB + e.getMessage());
+            System.out.println(ERROR_DB + e.getMessage());
             return;
         }
  
@@ -965,7 +965,7 @@ private static void modifyAppointment(Scanner input) {
             deleteStmt.setInt(1, appointmentId);
             deleteStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error deleting appointment: " + e.getMessage());
+            System.out.println("Error deleting appointment: " + e.getMessage());
             return;
         }
  
@@ -974,7 +974,7 @@ private static void modifyAppointment(Scanner input) {
             freeStmt.setInt(1, slotId);
             freeStmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.info("Error freeing slot: " + e.getMessage());
+            System.out.println("Error freeing slot: " + e.getMessage());
         }
  
         String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
@@ -982,6 +982,6 @@ private static void modifyAppointment(Scanner input) {
                 TIME + startTime + " - " + endTime;
         notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
         notificationManager.cancelReminder(appointmentId);
-        LOGGER.info("Appointment cancelled successfully! Email sent to: " + userEmail);
+        System.out.println("Appointment cancelled successfully! Email sent to: " + userEmail);
     }
 }
