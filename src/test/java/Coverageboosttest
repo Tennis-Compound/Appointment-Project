@@ -1,0 +1,804 @@
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.PrintStream;
+import java.io.StringReader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.sql.*;
+import java.util.Scanner;
+
+/**
+ * Supplementary tests targeting the uncovered branches in Appoitment_Main_Page.
+ *
+ * Drop this file into src/test/java/ alongside AppoitmentMainPageTest.java.
+ * It requires JUnit 5 and Mockito (already in pom.xml).
+ *
+ * Target coverage gaps:
+ *  - bookAppointment: success path (slot available → INSERT → email sent)
+ *  - bookAppointment: INSERT returns empty RS (no appointment_id)
+ *  - bookAppointment: slot available but userEmail RS empty after booking
+ *  - viewMyAppointments: no DB, empty, past/upcoming rows
+ *  - modifyAppointment: no DB, not found, cancel (0), past slot, slot unavail, success, failed update
+ *  - adminMenu: all 5 cases + default
+ *  - userMenu: all 7 cases (needs a real loop test)
+ *  - userLogin: SQLException path
+ *  - userSignUp: rs > 0 false path
+ *  - initializeNotificationService: useMockNotifications=true branch (already partially covered)
+ */
+public class CoverageBoostTest {
+
+    private final PrintStream originalOut = System.out;
+    private final InputStream originalIn  = System.in;
+    private ByteArrayOutputStream outContent;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        outContent = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(outContent));
+
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", false);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", -1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "");
+
+        NotificationManager mockNM = mock(NotificationManager.class);
+        setStaticField(Appoitment_Main_Page.class, "notificationManager", mockNM);
+
+        Field connField = DatabaseConnection.class.getDeclaredField("connection");
+        connField.setAccessible(true);
+        connField.set(null, null);
+    }
+
+    @AfterEach
+    void tearDown() {
+        System.setOut(originalOut);
+        System.setIn(originalIn);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void setStaticField(Class<?> clazz, String name, Object value) throws Exception {
+        Field f = clazz.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(null, value);
+    }
+
+    private Object getStaticField(Class<?> clazz, String name) throws Exception {
+        Field f = clazz.getDeclaredField(name);
+        f.setAccessible(true);
+        return f.get(null);
+    }
+
+    private Object invoke(String methodName, Class<?>[] types, Object... args) throws Exception {
+        Method m = Appoitment_Main_Page.class.getDeclaredMethod(methodName, types);
+        m.setAccessible(true);
+        return m.invoke(null, args);
+    }
+
+    private Scanner sc(String s) { return new Scanner(new StringReader(s)); }
+
+    private Connection mockConn() throws Exception {
+        Connection c = mock(Connection.class);
+        Field f = DatabaseConnection.class.getDeclaredField("connection");
+        f.setAccessible(true);
+        f.set(null, c);
+        return c;
+    }
+
+    private void stubEmptySlots(Connection conn) throws Exception {
+        Statement stmt = mock(Statement.class);
+        ResultSet rs   = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(stmt);
+        when(stmt.executeQuery(anyString())).thenReturn(rs);
+        when(rs.next()).thenReturn(false);
+    }
+
+    private Timestamp now() { return new Timestamp(System.currentTimeMillis()); }
+    private Timestamp future() { return new Timestamp(System.currentTimeMillis() + 86_400_000L); }
+    private Timestamp past() { return new Timestamp(System.currentTimeMillis() - 86_400_000L); }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // viewMyAppointments
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testViewMyAppointmentsNoDatabaseConnection() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        invoke("viewMyAppointments", new Class[]{});
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testViewMyAppointmentsEmpty() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        PreparedStatement ps = mock(PreparedStatement.class);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.next()).thenReturn(false);
+        when(ps.executeQuery()).thenReturn(rs);
+        when(conn.prepareStatement(anyString())).thenReturn(ps);
+
+        invoke("viewMyAppointments", new Class[]{});
+        assertTrue(outContent.toString().contains("You have no appointments."));
+    }
+
+    @Test
+    void testViewMyAppointmentsUpcomingRow() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        PreparedStatement ps = mock(PreparedStatement.class);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.next()).thenReturn(true, false);
+        when(rs.getInt("appointment_id")).thenReturn(42);
+        when(rs.getString("appointment_type")).thenReturn("URGENT");
+        when(rs.getTimestamp("start_datetime")).thenReturn(future());
+        when(rs.getTimestamp("end_datetime")).thenReturn(future());
+        when(ps.executeQuery()).thenReturn(rs);
+        when(conn.prepareStatement(anyString())).thenReturn(ps);
+
+        invoke("viewMyAppointments", new Class[]{});
+        String output = outContent.toString();
+        assertTrue(output.contains("UPCOMING"));
+        assertTrue(output.contains("URGENT"));
+    }
+
+    @Test
+    void testViewMyAppointmentsPastRow() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        PreparedStatement ps = mock(PreparedStatement.class);
+        ResultSet rs = mock(ResultSet.class);
+        when(rs.next()).thenReturn(true, false);
+        when(rs.getInt("appointment_id")).thenReturn(7);
+        when(rs.getString("appointment_type")).thenReturn("FOLLOW_UP");
+        when(rs.getTimestamp("start_datetime")).thenReturn(past());
+        when(rs.getTimestamp("end_datetime")).thenReturn(past());
+        when(ps.executeQuery()).thenReturn(rs);
+        when(conn.prepareStatement(anyString())).thenReturn(ps);
+
+        invoke("viewMyAppointments", new Class[]{});
+        assertTrue(outContent.toString().contains("PAST"));
+    }
+
+    @Test
+    void testViewMyAppointmentsSQLException() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("DB error"));
+
+        invoke("viewMyAppointments", new Class[]{});
+        assertTrue(outContent.toString().contains("Error fetching appointments"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // bookAppointment — success path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testBookAppointmentSuccess() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        stubEmptySlots(conn); // viewAvailableSlots
+
+        // checkStmt: slot IS available
+        PreparedStatement checkStmt = mock(PreparedStatement.class);
+        ResultSet slotRs = mock(ResultSet.class);
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(slotRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(checkStmt.executeQuery()).thenReturn(slotRs);
+
+        // bookStmt: returns appointment_id
+        PreparedStatement bookStmt = mock(PreparedStatement.class);
+        ResultSet bookRs = mock(ResultSet.class);
+        when(bookRs.next()).thenReturn(true);
+        when(bookRs.getInt("appointment_id")).thenReturn(99);
+        when(bookStmt.executeQuery()).thenReturn(bookRs);
+
+        // updateStmt: mark slot unavailable
+        PreparedStatement updateStmt = mock(PreparedStatement.class);
+
+        // userStmt: get email
+        PreparedStatement userStmt = mock(PreparedStatement.class);
+        ResultSet userRs = mock(ResultSet.class);
+        when(userRs.next()).thenReturn(true);
+        when(userRs.getString("email")).thenReturn("user@test.com");
+        when(userStmt.executeQuery()).thenReturn(userRs);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(checkStmt)
+                .thenReturn(bookStmt)
+                .thenReturn(updateStmt)
+                .thenReturn(userStmt);
+
+        // type=1 URGENT, duration=20, 1 participant, no location
+        invoke("bookAppointment", new Class[]{Scanner.class}, sc("1\n1\n20\n1\n\n"));
+        assertTrue(outContent.toString().contains("Appointment booked successfully!"));
+    }
+
+    @Test
+    void testBookAppointmentSuccessNoEmailFound() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        stubEmptySlots(conn);
+
+        PreparedStatement checkStmt = mock(PreparedStatement.class);
+        ResultSet slotRs = mock(ResultSet.class);
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(slotRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(checkStmt.executeQuery()).thenReturn(slotRs);
+
+        PreparedStatement bookStmt = mock(PreparedStatement.class);
+        ResultSet bookRs = mock(ResultSet.class);
+        when(bookRs.next()).thenReturn(true);
+        when(bookRs.getInt("appointment_id")).thenReturn(55);
+        when(bookStmt.executeQuery()).thenReturn(bookRs);
+
+        PreparedStatement updateStmt = mock(PreparedStatement.class);
+
+        PreparedStatement userStmt = mock(PreparedStatement.class);
+        ResultSet userRs = mock(ResultSet.class);
+        when(userRs.next()).thenReturn(false); // no email row
+        when(userStmt.executeQuery()).thenReturn(userRs);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(checkStmt)
+                .thenReturn(bookStmt)
+                .thenReturn(updateStmt)
+                .thenReturn(userStmt);
+
+        // Should not throw; simply skip email send
+        assertDoesNotThrow(() -> invoke("bookAppointment", new Class[]{Scanner.class}, sc("1\n2\n20\n1\n\n")));
+    }
+
+    @Test
+    void testBookAppointmentInsertReturnsNoId() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        stubEmptySlots(conn);
+
+        PreparedStatement checkStmt = mock(PreparedStatement.class);
+        ResultSet slotRs = mock(ResultSet.class);
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(slotRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(checkStmt.executeQuery()).thenReturn(slotRs);
+
+        PreparedStatement bookStmt = mock(PreparedStatement.class);
+        ResultSet bookRs = mock(ResultSet.class);
+        when(bookRs.next()).thenReturn(false); // no appointment_id returned
+        when(bookStmt.executeQuery()).thenReturn(bookRs);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(checkStmt)
+                .thenReturn(bookStmt);
+
+        // Should complete without exception even without appointment_id
+        assertDoesNotThrow(() -> invoke("bookAppointment", new Class[]{Scanner.class}, sc("1\n4\n30\n1\n\n")));
+    }
+
+    @Test
+    void testBookAppointmentSQLException() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        stubEmptySlots(conn);
+
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("insert fail"));
+
+        invoke("bookAppointment", new Class[]{Scanner.class}, sc("1\n4\n30\n1\n\n"));
+        assertTrue(outContent.toString().contains("Error booking appointment"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // modifyAppointment (user-side)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testModifyAppointmentNoDatabaseConnection() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testModifyAppointmentNotFound() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        // viewMyAppointments: empty
+        PreparedStatement viewPs = mock(PreparedStatement.class);
+        ResultSet emptyRs = mock(ResultSet.class);
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        // getApptStmt: not found
+        PreparedStatement getPs = mock(PreparedStatement.class);
+        ResultSet notFoundRs = mock(ResultSet.class);
+        when(notFoundRs.next()).thenReturn(false);
+        when(getPs.executeQuery()).thenReturn(notFoundRs);
+
+        when(conn.prepareStatement(anyString())).thenReturn(viewPs).thenReturn(getPs);
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("999\n"));
+        assertTrue(outContent.toString().contains("Appointment not found"));
+    }
+
+    @Test
+    void testModifyAppointmentCancelledByUser() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        PreparedStatement viewPs = mock(PreparedStatement.class);
+        ResultSet emptyRs = mock(ResultSet.class);
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        PreparedStatement getPs = mock(PreparedStatement.class);
+        ResultSet apptRs = mock(ResultSet.class);
+        when(apptRs.next()).thenReturn(true);
+        when(apptRs.getInt("slot_id")).thenReturn(1);
+        when(apptRs.getString("email")).thenReturn("u@test.com");
+        when(apptRs.getString("name")).thenReturn("User");
+        when(apptRs.getString("appointment_type")).thenReturn("URGENT");
+        when(apptRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(apptRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(getPs.executeQuery()).thenReturn(apptRs);
+
+        // viewAvailableSlots inside modifyAppointment
+        Statement slotsStmt = mock(Statement.class);
+        ResultSet slotsRs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(slotsStmt);
+        when(slotsStmt.executeQuery(anyString())).thenReturn(slotsRs);
+        when(slotsRs.next()).thenReturn(false);
+
+        when(conn.prepareStatement(anyString())).thenReturn(viewPs).thenReturn(getPs);
+
+        // newSlotId = 0 → cancelled
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n0\n"));
+        assertTrue(outContent.toString().contains("Modification cancelled."));
+    }
+
+    @Test
+    void testModifyAppointmentNewSlotNotFound() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        PreparedStatement viewPs = mock(PreparedStatement.class);
+        ResultSet emptyRs = mock(ResultSet.class);
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        PreparedStatement getPs = mock(PreparedStatement.class);
+        ResultSet apptRs = mock(ResultSet.class);
+        when(apptRs.next()).thenReturn(true);
+        when(apptRs.getInt("slot_id")).thenReturn(1);
+        when(apptRs.getString("email")).thenReturn("u@test.com");
+        when(apptRs.getString("name")).thenReturn("User");
+        when(apptRs.getString("appointment_type")).thenReturn("URGENT");
+        when(apptRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(apptRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(getPs.executeQuery()).thenReturn(apptRs);
+
+        PreparedStatement checkPs = mock(PreparedStatement.class);
+        ResultSet noSlotRs = mock(ResultSet.class);
+        when(noSlotRs.next()).thenReturn(false);
+        when(checkPs.executeQuery()).thenReturn(noSlotRs);
+
+        Statement slotsStmt = mock(Statement.class);
+        ResultSet slotsRs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(slotsStmt);
+        when(slotsStmt.executeQuery(anyString())).thenReturn(slotsRs);
+        when(slotsRs.next()).thenReturn(false);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(viewPs)
+                .thenReturn(getPs)
+                .thenReturn(checkPs);
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n99\n"));
+        assertTrue(outContent.toString().contains("Invalid slot ID"));
+    }
+
+    @Test
+    void testModifyAppointmentNewSlotUnavailable() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        PreparedStatement viewPs = mock(PreparedStatement.class);
+        ResultSet emptyRs = mock(ResultSet.class);
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        PreparedStatement getPs = mock(PreparedStatement.class);
+        ResultSet apptRs = mock(ResultSet.class);
+        when(apptRs.next()).thenReturn(true);
+        when(apptRs.getInt("slot_id")).thenReturn(1);
+        when(apptRs.getString("email")).thenReturn("u@test.com");
+        when(apptRs.getString("name")).thenReturn("User");
+        when(apptRs.getString("appointment_type")).thenReturn("FOLLOW_UP");
+        when(apptRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(apptRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(getPs.executeQuery()).thenReturn(apptRs);
+
+        PreparedStatement checkPs = mock(PreparedStatement.class);
+        ResultSet slotRs = mock(ResultSet.class);
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getBoolean("is_available")).thenReturn(false);
+        when(slotRs.getTimestamp(anyString())).thenReturn(future());
+        when(checkPs.executeQuery()).thenReturn(slotRs);
+
+        Statement slotsStmt = mock(Statement.class);
+        ResultSet slotsRs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(slotsStmt);
+        when(slotsStmt.executeQuery(anyString())).thenReturn(slotsRs);
+        when(slotsRs.next()).thenReturn(false);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(viewPs)
+                .thenReturn(getPs)
+                .thenReturn(checkPs);
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n5\n"));
+        assertTrue(outContent.toString().contains("Selected slot is not available."));
+    }
+
+    @Test
+    void testModifyAppointmentSuccess() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        PreparedStatement viewPs   = mock(PreparedStatement.class);
+        PreparedStatement getPs    = mock(PreparedStatement.class);
+        PreparedStatement checkPs  = mock(PreparedStatement.class);
+        PreparedStatement updatePs = mock(PreparedStatement.class);
+        PreparedStatement freePs   = mock(PreparedStatement.class);
+        PreparedStatement bookPs   = mock(PreparedStatement.class);
+
+        ResultSet emptyRs = mock(ResultSet.class);
+        ResultSet apptRs  = mock(ResultSet.class);
+        ResultSet slotRs  = mock(ResultSet.class);
+
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        when(apptRs.next()).thenReturn(true);
+        when(apptRs.getInt("slot_id")).thenReturn(1);
+        when(apptRs.getString("email")).thenReturn("u@test.com");
+        when(apptRs.getString("name")).thenReturn("User");
+        when(apptRs.getString("appointment_type")).thenReturn("ASSESSMENT");
+        when(apptRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(apptRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(getPs.executeQuery()).thenReturn(apptRs);
+
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getBoolean("is_available")).thenReturn(true);
+        when(slotRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(slotRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(checkPs.executeQuery()).thenReturn(slotRs);
+
+        when(updatePs.executeUpdate()).thenReturn(1); // rowsUpdated > 0
+
+        Statement slotsStmt = mock(Statement.class);
+        ResultSet slotsRs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(slotsStmt);
+        when(slotsStmt.executeQuery(anyString())).thenReturn(slotsRs);
+        when(slotsRs.next()).thenReturn(false);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(viewPs)
+                .thenReturn(getPs)
+                .thenReturn(checkPs)
+                .thenReturn(updatePs)
+                .thenReturn(freePs)
+                .thenReturn(bookPs);
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n2\n"));
+        assertTrue(outContent.toString().contains("Appointment modified successfully!"));
+    }
+
+    @Test
+    void testModifyAppointmentFailedUpdate() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+
+        PreparedStatement viewPs   = mock(PreparedStatement.class);
+        PreparedStatement getPs    = mock(PreparedStatement.class);
+        PreparedStatement checkPs  = mock(PreparedStatement.class);
+        PreparedStatement updatePs = mock(PreparedStatement.class);
+
+        ResultSet emptyRs = mock(ResultSet.class);
+        ResultSet apptRs  = mock(ResultSet.class);
+        ResultSet slotRs  = mock(ResultSet.class);
+
+        when(emptyRs.next()).thenReturn(false);
+        when(viewPs.executeQuery()).thenReturn(emptyRs);
+
+        when(apptRs.next()).thenReturn(true);
+        when(apptRs.getInt("slot_id")).thenReturn(1);
+        when(apptRs.getString("email")).thenReturn("u@test.com");
+        when(apptRs.getString("name")).thenReturn("User");
+        when(apptRs.getString("appointment_type")).thenReturn("GROUP");
+        when(apptRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(apptRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(getPs.executeQuery()).thenReturn(apptRs);
+
+        when(slotRs.next()).thenReturn(true);
+        when(slotRs.getBoolean("is_available")).thenReturn(true);
+        when(slotRs.getTimestamp("start_datetime")).thenReturn(future());
+        when(slotRs.getTimestamp("end_datetime")).thenReturn(future());
+        when(checkPs.executeQuery()).thenReturn(slotRs);
+
+        when(updatePs.executeUpdate()).thenReturn(0); // no rows updated
+
+        Statement slotsStmt = mock(Statement.class);
+        ResultSet slotsRs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(slotsStmt);
+        when(slotsStmt.executeQuery(anyString())).thenReturn(slotsRs);
+        when(slotsRs.next()).thenReturn(false);
+
+        when(conn.prepareStatement(anyString()))
+                .thenReturn(viewPs)
+                .thenReturn(getPs)
+                .thenReturn(checkPs)
+                .thenReturn(updatePs);
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n2\n"));
+        assertTrue(outContent.toString().contains("Failed to modify appointment."));
+    }
+
+    @Test
+    void testModifyAppointmentSQLException() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        Connection conn = mockConn();
+        // viewMyAppointments throws
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("boom"));
+
+        invoke("modifyAppointment", new Class[]{Scanner.class}, sc("1\n"));
+        assertTrue(outContent.toString().contains("Error modifying appointment"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // adminMenu — all branches
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testAdminMenuLogout() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("1\n"));
+        assertFalse((boolean) getStaticField(Appoitment_Main_Page.class, "isLoggedIn"));
+        assertTrue(outContent.toString().contains("logged out successfully"));
+    }
+
+    @Test
+    void testAdminMenuViewReservationsNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        // case 2 — no DB connection
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("2\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testAdminMenuCancelReservationNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        // case 3 — no DB
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("3\n1\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testAdminMenuModifyReservationNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        // case 4 — no DB
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("4\n1\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testAdminMenuTestNotifications() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        NotificationManager mockNM = mock(NotificationManager.class);
+        setStaticField(Appoitment_Main_Page.class, "notificationManager", mockNM);
+        // case 5
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("5\nadmin@test.com\n"));
+        verify(mockNM).sendBookingConfirmation(eq("admin@test.com"), anyString());
+    }
+
+    @Test
+    void testAdminMenuDefaultBranch() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "isLoggedIn", true);
+        invoke("adminMenu", new Class[]{Scanner.class}, sc("99\n"));
+        assertTrue(outContent.toString().contains("Invalid option."));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // userMenu — exercise all case branches
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testUserMenuCase1ViewSlots() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        // case 1 (viewAvailableSlots - no DB), then 0 to logout
+        invoke("userMenu", new Class[]{Scanner.class}, sc("1\n0\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+        assertTrue(outContent.toString().contains("Logged out"));
+    }
+
+    @Test
+    void testUserMenuCase2ShowBookingRules() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        invoke("userMenu", new Class[]{Scanner.class}, sc("2\n0\n"));
+        assertTrue(outContent.toString().contains("Booking Rules"));
+    }
+
+    @Test
+    void testUserMenuCase3BookNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        // case 3: bookAppointment — no DB, then logout
+        invoke("userMenu", new Class[]{Scanner.class}, sc("3\n0\n"));
+        String out = outContent.toString();
+        // viewAvailableSlots called first inside bookAppointment returns "Cannot connect"
+        assertTrue(out.contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testUserMenuCase4ViewMyAppointmentsNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        invoke("userMenu", new Class[]{Scanner.class}, sc("4\n0\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testUserMenuCase5ModifyNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        invoke("userMenu", new Class[]{Scanner.class}, sc("5\n1\n0\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testUserMenuCase6CancelNoDB() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        invoke("userMenu", new Class[]{Scanner.class}, sc("6\n1\n0\n"));
+        assertTrue(outContent.toString().contains("Cannot connect to database."));
+    }
+
+    @Test
+    void testUserMenuDefaultBranch() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserId", 1);
+        setStaticField(Appoitment_Main_Page.class, "loggedInUserName", "TestUser");
+        invoke("userMenu", new Class[]{Scanner.class}, sc("99\n0\n"));
+        assertTrue(outContent.toString().contains("Invalid option."));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // userLogin — SQLException path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testUserLoginSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("fail"));
+        invoke("userLogin", new Class[]{Scanner.class}, sc("user\npass\n"));
+        assertTrue(outContent.toString().contains("Error during login"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // userSignUp — rs == 0 path and SQLException
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testUserSignUpInsertZeroRows() throws Exception {
+        Connection conn = mockConn();
+        PreparedStatement ps = mock(PreparedStatement.class);
+        when(ps.executeUpdate()).thenReturn(0); // nothing inserted
+        when(conn.prepareStatement(anyString())).thenReturn(ps);
+
+        invoke("userSignUp", new Class[]{Scanner.class}, sc("user\nemail@test.com\npassword\n"));
+        // No success message — should not throw
+        assertFalse(outContent.toString().contains("Sign up successful!"));
+    }
+
+    @Test
+    void testUserSignUpSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("duplicate key"));
+
+        invoke("userSignUp", new Class[]{Scanner.class}, sc("user\nemail@test.com\npassword\n"));
+        assertTrue(outContent.toString().contains("Error during Sign Up"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // initializeNotificationService — useMockNotifications = true
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testInitializeNotificationServiceMockMode() throws Exception {
+        setStaticField(Appoitment_Main_Page.class, "useMockNotifications", true);
+        invoke("initializeNotificationService", new Class[]{});
+        assertTrue(outContent.toString().contains("mock notification service"));
+        // restore
+        setStaticField(Appoitment_Main_Page.class, "useMockNotifications", false);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // viewAvailableSlots — SQLException path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testViewAvailableSlotsSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.createStatement()).thenThrow(new SQLException("db error"));
+
+        invoke("viewAvailableSlots", new Class[]{});
+        assertTrue(outContent.toString().contains("Error fetching slots"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // viewAvailableSlots — data row shown
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testViewAvailableSlotsWithData() throws Exception {
+        Connection conn = mockConn();
+        Statement stmt = mock(Statement.class);
+        ResultSet rs = mock(ResultSet.class);
+        when(conn.createStatement()).thenReturn(stmt);
+        when(stmt.executeQuery(anyString())).thenReturn(rs);
+        when(rs.next()).thenReturn(true, false);
+        when(rs.getInt("slot_id")).thenReturn(3);
+        when(rs.getTimestamp("start_datetime")).thenReturn(future());
+        when(rs.getTimestamp("end_datetime")).thenReturn(future());
+
+        invoke("viewAvailableSlots", new Class[]{});
+        assertTrue(outContent.toString().contains("ID: 3"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // adminViewAllReservations — SQLException path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testAdminViewAllReservationsSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("query error"));
+
+        invoke("adminViewAllReservations", new Class[]{});
+        assertTrue(outContent.toString().contains("Error fetching reservations"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // adminCancelReservation — SQLException path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testAdminCancelReservationSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("db error"));
+
+        invoke("adminCancelReservation", new Class[]{Scanner.class}, sc("1\n"));
+        assertTrue(outContent.toString().contains("Error cancelling reservation"));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // adminModifyReservation — success path
+    // ══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void testAdminModifyReservationSQLException() throws Exception {
+        Connection conn = mockConn();
+        when(conn.prepareStatement(anyString())).thenThrow(new SQLException("db error"));
+
+        invoke("adminModifyReservation", new Class[]{Scanner.class}, sc("1\n"));
+        assertTrue(outContent.toString().contains("Error modifying reservation"));
+    }
+}
