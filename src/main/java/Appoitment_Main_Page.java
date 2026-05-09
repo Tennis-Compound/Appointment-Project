@@ -494,7 +494,7 @@ public class Appoitment_Main_Page {
 	private static void userSignUp(Scanner input) {
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info(ENTER_USERNAME);
@@ -511,10 +511,10 @@ public class Appoitment_Main_Page {
             stmt.setString(3, password);
             int rs = stmt.executeUpdate();
             if (rs > 0) {
-                LOGGER.info("Sign up successful!");
+               System.out.println("Sign up successful!");
             }
         } catch (SQLException e) {
-            LOGGER.info("Error during Sign Up: " + e.getMessage());
+            System.out.println("Error during Sign Up: " + e.getMessage());
         }
     }
 	
@@ -623,7 +623,7 @@ public class Appoitment_Main_Page {
         viewAvailableSlots();
         Connection conn = DatabaseConnection.getConnection();
         if (conn == null) {
-            LOGGER.info(CANNOT_CONNECT);
+            System.out.println(CANNOT_CONNECT);
             return;
         }
         LOGGER.info("Enter the slot ID you want to book: ");
@@ -651,7 +651,7 @@ public class Appoitment_Main_Page {
             case 6: appointmentType = "INDIVIDUAL"; break;
             case 7: appointmentType = "GROUP"; break;
             default:
-                LOGGER.info("Invalid appointment type.");
+                System.out.println("Invalid appointment type.");
                 return;
         }
  
@@ -667,7 +667,7 @@ public class Appoitment_Main_Page {
         AppointmentRequest request = new AppointmentRequest(appointmentType, durationMinutes, participantCount, location);
         BookingRuleStrategy rule = BookingRuleFactory.getRule(appointmentType);
         if (rule != null && !rule.isValid(request)) {
-            LOGGER.info("Booking failed: " + rule.getErrorMessage());
+            System.out.println("Booking failed: " + rule.getErrorMessage());
             return;
         }
  
@@ -679,14 +679,14 @@ public class Appoitment_Main_Page {
             checkStmt.setInt(1, slotID);
             try (ResultSet rs = checkStmt.executeQuery()) {
                 if (!rs.next()) {
-                    LOGGER.info("Slot not available, does not exist, or is in the past.");
+                    System.out.println("Slot not available, does not exist, or is in the past.");
                     return;
                 }
                 startTime = rs.getTimestamp(START_DATETIME);
                 endTime = rs.getTimestamp(END_DATETIME);
             }
         } catch (SQLException e) {
-            LOGGER.info(ERROR_FETCHING + e.getMessage());
+            System.out.println(ERROR_FETCHING + e.getMessage());
             return;
         }
  
@@ -721,7 +721,7 @@ public class Appoitment_Main_Page {
                                 notificationManager.sendBookingConfirmation(userEmail, appointmentDetails);
                                 notificationManager.scheduleReminder(userEmail, appointmentId,
                                         appointmentDetails, startTime.getTime());
-                                LOGGER.info("Appointment booked successfully! Email sent to: " + userEmail);
+                                System.out.println("Appointment booked successfully! Email sent to: " + userEmail);
                             }
                         }
                     }
