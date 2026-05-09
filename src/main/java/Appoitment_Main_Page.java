@@ -717,7 +717,7 @@ public class Appoitment_Main_Page {
                                         "\nParticipants: " + participantCount +
                                         "\nLocation: " + (location.isEmpty() ? "None" : location) +
                                         DATE + startTime +
-                                        Time + startTime + " - " + endTime;
+                                        TIME + startTime + " - " + endTime;
                                 notificationManager.sendBookingConfirmation(userEmail, appointmentDetails);
                                 notificationManager.scheduleReminder(userEmail, appointmentId,
                                         appointmentDetails, startTime.getTime());
