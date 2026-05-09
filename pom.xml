@@ -39,7 +39,8 @@
             <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
-        
+
+             
         <!-- Dotenv for environment variables -->
         <dependency>
             <groupId>io.github.cdimascio</groupId>
@@ -88,6 +89,12 @@
                 </configuration>
             </plugin>
 
+<plugin>
+    <groupId>org.sonarsource.scanner.maven</groupId>
+    <artifactId>sonar-maven-plugin</artifactId>
+    <version>3.10.0.4736</version>
+</plugin>
+                 
             <!-- Exec Maven Plugin to run the main application -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
