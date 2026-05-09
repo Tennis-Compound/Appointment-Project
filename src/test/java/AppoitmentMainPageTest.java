@@ -1,5 +1,8 @@
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayOutputStream;
@@ -128,25 +131,38 @@ public class AppoitmentMainPageTest {
         assertDoesNotThrow(() -> Appoitment_Main_Page.main(new String[]{}));
     }
 
-    @Test
+       @Test
     void testMainUserLoginNoDatabaseThenExit() throws Exception {
-        // case 2: userLogin with no DB → "Cannot connect" then exit
-        System.setIn(new java.io.ByteArrayInputStream("2\nuser\npass\n0\n".getBytes()));
+        // Case 2: userLogin with no DB -> returns immediately -> then 0 to exit
+        // We do NOT provide user/pass because the code returns BEFORE reading them
+        provideInput("2\n0\n");
+        
         assertDoesNotThrow(() -> Appoitment_Main_Page.main(new String[]{}));
+        assertTrue(outContent.toString().contains("Cannot connect"));
+        assertTrue(outContent.toString().contains("Exiting system"));
     }
 
     @Test
     void testMainUserSignUpNoDatabaseThenExit() throws Exception {
-        // case 3: userSignUp with no DB then exit
-        System.setIn(new java.io.ByteArrayInputStream("3\nuser\nemail\npass\n0\n".getBytes()));
-        assertDoesNotThrow(() -> Appoitment_Main_Page.main(new String[]{}));
-    }
-
-    // ══════════════════════════════════════════════════════════════════════════
-    // initializeNotificationService() branches
-    // ══════════════════════════════════════════════════════════════════════════
-
-    @Test
+        // Case 3: userSignUp with no DB -> returns immediately -> then 0 to exit
+        // We do NOT provide user/email/pass because the code returns BEFORE reading them
+        provideInput("3\n0\n");
+                
+                assertDoesNotThrow(() -> Appoitment_Main_Page.main(new String[]{}));
+                assertTrue(outContent.toString().contains("Cannot connect"));
+                assertTrue(outContent.toString().contains("Exiting system"));
+            }
+        
+        
+            // ══════════════════════════════════════════════════════════════════════════
+            // initializeNotificationService() branches
+            // ══════════════════════════════════════════════════════════════════════════
+        
+            private void provideInput(String string) {
+                System.setIn(new java.io.ByteArrayInputStream(string.getBytes()));
+            }
+        
+            @Test
     void testInitializeWithMockFlag() throws Exception {
         setStaticField(Appoitment_Main_Page.class, "useMockNotifications", true);
         invoke("initializeNotificationService", new Class[]{});
