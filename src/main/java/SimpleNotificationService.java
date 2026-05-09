@@ -1,6 +1,8 @@
 public class SimpleNotificationService implements NotificationService {
 
-    public SimpleNotificationService() {}
+    public SimpleNotificationService() {
+        // No initialization required for this simple notification service
+    }
 
     @Override
     public void sendBookingConfirmation(String email, String message) {
