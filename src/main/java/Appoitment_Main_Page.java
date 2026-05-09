@@ -279,50 +279,57 @@ public class Appoitment_Main_Page {
         Timestamp startTime;
         Timestamp endTime;
  
-        try (PreparedStatement getDetailsStmt = conn.prepareStatement(
+        try (
+			PreparedStatement getDetailsStmt = conn.prepareStatement(
                 "SELECT a.slot_id, u.email, t.start_datetime, t.end_datetime " +
                 "FROM \"Appointment\" a " +
                 "JOIN \"Users\" u ON a.user_id = u.user_id " +
                 "JOIN \"TimeSlots\" t ON a.slot_id = t.slot_id " +
                 "WHERE a.appointment_id = ?")) {
             getDetailsStmt.setInt(1, appointmentId);
-            try (ResultSet detailsRs = getDetailsStmt.executeQuery()) {
-                if (!detailsRs.next()) {
-                    System.out.println("Appointment not found.");
-                    return;
-                }
+			ResultSet detailsRs = getDetailsStmt.executeQuery();
+			
+			if (!detailsRs.next()) {
+				System.out.println("Appointment not found.");
+				detailsRs.close();
+				getDetailsStmt.close();
+				return;
+			}
                 slotId = detailsRs.getInt(SLOT_ID);
                 userEmail = detailsRs.getString(EMAIL);
                 startTime = detailsRs.getTimestamp(START_DATETIME);
                 endTime = detailsRs.getTimestamp(END_DATETIME);
-            }
-        } catch (SQLException e) {
-            System.out.println(ERROR_DB + e.getMessage());
-            return;
-        }
- 
-        try (PreparedStatement deleteStmt = conn.prepareStatement(
-                "DELETE FROM \"Appointment\" WHERE appointment_id = ?")) {
-            deleteStmt.setInt(1, appointmentId);
-            int rowsAffected = deleteStmt.executeUpdate();
-            if (rowsAffected > 0) {
-                try (PreparedStatement updateStmt = conn.prepareStatement(
-                        UPDATE_STMNT)) {
-                    updateStmt.setInt(1, slotId);
-                    updateStmt.executeUpdate();
-                }
-                String appointmentDetails = APPOINTMENT_ID2 + appointmentId +
-                                            DATE + startTime +
-                                            TIME + startTime + " - " + endTime;
-                notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
-                notificationManager.cancelReminder(appointmentId);
-                System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
-            } else {
-                System.out.println("Failed to cancel reservation.");
-            }
-        } catch (SQLException e) {
-            System.out.println("Error cancelling reservation: " + e.getMessage());
-        }
+				detailsRs.close();
+				getDetailsStmt.close();
+            PreparedStatement deleteStmt = conn.prepareStatement(
+				"DELETE FROM \"Appointment\" WHERE appointment_id = ?"
+			);
+			deleteStmt.setInt(1, appointmentId);
+			int rowsAffected = deleteStmt.executeUpdate();
+			deleteStmt.close();
+			
+			if (rowsAffected > 0) {
+				PreparedStatement updateStmt = conn.prepareStatement(
+					"UPDATE \"TimeSlots\" SET is_available = true WHERE slot_id = ?"
+				);
+				updateStmt.setInt(1, slotId);
+				updateStmt.executeUpdate();
+				updateStmt.close();
+				
+				String appointmentDetails = "Appointment ID: " + appointmentId + 
+										   "\nDate: " + startTime +
+										   "\nTime: " + startTime + " - " + endTime;
+				
+				notificationManager.sendCancellationNotice(userEmail, appointmentDetails);
+				notificationManager.cancelReminder(appointmentId);
+				
+				System.out.println("Reservation cancelled successfully! Email sent to: " + userEmail);
+			} else {
+				System.out.println("Failed to cancel reservation.");
+			}
+		} catch (SQLException e) {
+			System.out.println("Error cancelling reservation: " + e.getMessage());
+		}
     }
 	
 	/**
@@ -480,6 +487,8 @@ public class Appoitment_Main_Page {
                 } else {
                     System.out.println("Invalid username or password");
                 }
+				rs.close();
+				stmt.close();
             }
         } catch (SQLException e) {
             System.out.println("Error during login: " + e.getMessage());
@@ -513,6 +522,7 @@ public class Appoitment_Main_Page {
             if (rs > 0) {
                System.out.println("Sign up successful!");
             }
+			stmt.close();
         } catch (SQLException e) {
             System.out.println("Error during Sign Up: " + e.getMessage());
         }
@@ -606,6 +616,8 @@ public class Appoitment_Main_Page {
             if (!found) {
                 System.out.println("No available slots found.");
             }
+			rs.close();
+			stmt.close();
         } catch (SQLException e) {
             System.out.println("Error fetching slots: " + e.getMessage());
         }
@@ -723,9 +735,12 @@ public class Appoitment_Main_Page {
                                         appointmentDetails, startTime.getTime());
                                 System.out.println("Appointment booked successfully! Email sent to: " + userEmail);
                             }
+							userRs.close();
+							userStmt.close();
                         }
                     }
                 }
+
             }
         } catch (SQLException e) {
             System.out.println("Error booking appointment: " + e.getMessage());
@@ -765,6 +780,8 @@ public class Appoitment_Main_Page {
                 if (!found) {
                     System.out.println("You have no appointments.");
                 }
+				rs.close();
+				stmt.close();
             }
         } catch (SQLException e) {
             System.out.println("Error fetching appointments: " + e.getMessage());
