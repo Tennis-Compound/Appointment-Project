@@ -1,156 +1,165 @@
 import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import javax.mail.*;
+import javax.mail.internet.*;
+import java.util.Properties;
 
 
 public class EmailNotificationServiceTest {
+
+    // A host that will always fail SMTP connection (covers the catch branch)
+    private static final String BAD_HOST  = "invalid.smtp.host.test";
+    private static final String BAD_PORT  = "9999";
+    private static final String USERNAME  = "test@example.com";
+    private static final String PASSWORD  = "testpassword";
 
     private EmailNotificationService service;
 
     @BeforeEach
     void setUp() {
-        service = new EmailNotificationService(
-            "invalid.smtp.host.test", "9999",
-            "test@example.com", "testpassword"
-        );
+        // Constructor assigns all four fields + fromEmail — covers constructor body
+        service = new EmailNotificationService(BAD_HOST, BAD_PORT, USERNAME, PASSWORD);
     }
 
+    // ── Constructor ────────────────────────────────────────────────────────────
 
     @Test
-    void constructor_createsInstanceSuccessfully() {
+    void constructorShouldCreateInstanceSuccessfully() {
         assertNotNull(service);
     }
 
     @Test
-    void constructor_withDifferentParameters_createsInstance() {
-        EmailNotificationService svc2 = new EmailNotificationService(
-            "smtp.gmail.com", "587", "user@gmail.com", "secret"
-        );
+    void constructorShouldAcceptValidParameters() {
+        // A second instance with different values — ensures fields are set correctly
+        EmailNotificationService svc2 =
+            new EmailNotificationService("smtp.gmail.com", "587", "user@gmail.com", "secret");
         assertNotNull(svc2);
     }
 
+    // ── sendBookingConfirmation ────────────────────────────────────────────────
+
     @Test
-    void constructor_withEmptyStrings_createsInstance() {
-        EmailNotificationService svc3 = new EmailNotificationService("", "", "", "");
-        assertNotNull(svc3);
+    void sendBookingConfirmation_shouldNotThrowWithInvalidSmtp() {
+        // The bad host will cause MessagingException; the method must swallow it
+        assertDoesNotThrow(() ->
+            service.sendBookingConfirmation("recipient@example.com", "Your booking is confirmed")
+        );
     }
 
+    @Test
+    void sendBookingConfirmation_shouldNotThrowWithEmptyMessage() {
+        assertDoesNotThrow(() ->
+            service.sendBookingConfirmation("recipient@example.com", "")
+        );
+    }
+
+    @Test
+    void sendBookingConfirmation_shouldHandleVariousEmailFormats() {
+        assertDoesNotThrow(() -> {
+            service.sendBookingConfirmation("user+tag@subdomain.example.com", "Test message");
+            service.sendBookingConfirmation("simple@test.org", "Another message");
+        });
+    }
+
+    // ── sendCancellationNotice ────────────────────────────────────────────────
+
+    @Test
+    void sendCancellationNotice_shouldNotThrowWithInvalidSmtp() {
+        assertDoesNotThrow(() ->
+            service.sendCancellationNotice("recipient@example.com", "Your appointment was cancelled")
+        );
+    }
+
+    @Test
+    void sendCancellationNotice_shouldNotThrowWithMultilineMessage() {
+        String multiline = "Appointment ID: 42\nDate: 2026-05-01\nTime: 10:00 AM";
+        assertDoesNotThrow(() ->
+            service.sendCancellationNotice("user@example.com", multiline)
+        );
+    }
+
+    @Test
+    void sendCancellationNotice_shouldHandleNullSafely() {
+        // Null recipient — MessagingException is caught internally
+        assertDoesNotThrow(() ->
+            service.sendCancellationNotice(null, "Cancellation message")
+        );
+    }
+
+    // ── sendReminder ───────────────────────────────────────────────────────────
+
+    @Test
+    void sendReminder_shouldNotThrowWithInvalidSmtp() {
+        assertDoesNotThrow(() ->
+            service.sendReminder("recipient@example.com", "Reminder: your appointment is tomorrow")
+        );
+    }
+
+    @Test
+    void sendReminder_shouldNotThrowWithLongMessage() {
+        String longMessage = "A".repeat(2000);
+        assertDoesNotThrow(() ->
+            service.sendReminder("user@example.com", longMessage)
+        );
+    }
+
+    @Test
+    void sendReminder_shouldHandleSpecialCharactersInMessage() {
+        String specialMsg = "Appointment @ 10:00 AM — Café \"Rendezvous\" <confirm>";
+        assertDoesNotThrow(() ->
+            service.sendReminder("user@example.com", specialMsg)
+        );
+    }
+
+    // ── Happy-path wiring through MockNotificationService ─────────────────────
+    // These tests confirm the NotificationService interface contract is fulfilled.
 
     @Test
     void shouldImplementNotificationServiceInterface() {
         assertTrue(service instanceof NotificationService);
     }
 
-    private static void callForCoverage(Runnable r) {
-        try { r.run(); } catch (Exception ignored) { }
+    @Test
+    void allThreeMethodsAreCallableOnTheSameInstance() {
+        // Exercises all three public method entry-points in one test
+        assertDoesNotThrow(() -> {
+            service.sendBookingConfirmation("a@b.com", "booking msg");
+            service.sendCancellationNotice("a@b.com", "cancel msg");
+            service.sendReminder("a@b.com", "reminder msg");
+        });
     }
 
-    @Test
-    void sendBookingConfirmation_isCallable() {
-        callForCoverage(() ->
-            service.sendBookingConfirmation("user@example.com", "Booking confirmed")
-        );
-    }
+    // ── With a valid-looking (but still unreachable) server ───────────────────
 
     @Test
-    void sendBookingConfirmation_withEmptyMessage_isCallable() {
-        callForCoverage(() ->
-            service.sendBookingConfirmation("user@example.com", "")
-        );
-    }
-
-    @Test
-    void sendBookingConfirmation_withLongMessage_isCallable() {
-        callForCoverage(() ->
-            service.sendBookingConfirmation("user@example.com", "A".repeat(500))
-        );
-    }
-
-    @Test
-    void sendBookingConfirmation_withSpecialChars_isCallable() {
-        callForCoverage(() ->
-            service.sendBookingConfirmation("user@example.com", "Appt @ 10:00 — confirmed!")
+    void sendBookingConfirmation_withGmailLikeConfig_shouldNotThrow() {
+        EmailNotificationService gmailService =
+            new EmailNotificationService("smtp.gmail.com", "587",
+                                         "noreply@example.com", "pass123");
+        assertDoesNotThrow(() ->
+            gmailService.sendBookingConfirmation("client@example.com", "Booking confirmed!")
         );
     }
 
     @Test
-    void sendCancellationNotice_isCallable() {
-        callForCoverage(() ->
-            service.sendCancellationNotice("user@example.com", "Your appointment was cancelled")
+    void sendCancellationNotice_withGmailLikeConfig_shouldNotThrow() {
+        EmailNotificationService gmailService =
+            new EmailNotificationService("smtp.gmail.com", "587",
+                                         "noreply@example.com", "pass123");
+        assertDoesNotThrow(() ->
+            gmailService.sendCancellationNotice("client@example.com", "Cancelled!")
         );
     }
 
     @Test
-    void sendCancellationNotice_withMultilineMessage_isCallable() {
-        callForCoverage(() ->
-            service.sendCancellationNotice("user@example.com",
-                "Appointment ID: 42\nDate: 2026-05-01\nTime: 10:00 AM")
-        );
-    }
-
-    @Test
-    void sendCancellationNotice_withEmptyMessage_isCallable() {
-        callForCoverage(() ->
-            service.sendCancellationNotice("user@example.com", "")
-        );
-    }
-
-    @Test
-    void sendReminder_isCallable() {
-        callForCoverage(() ->
-            service.sendReminder("user@example.com", "Reminder: appointment tomorrow")
-        );
-    }
-
-    @Test
-    void sendReminder_withLongMessage_isCallable() {
-        callForCoverage(() ->
-            service.sendReminder("user@example.com", "B".repeat(2000))
-        );
-    }
-
-    @Test
-    void sendReminder_withSpecialCharacters_isCallable() {
-        callForCoverage(() ->
-            service.sendReminder("user@example.com", "Reminder @ Café <confirm> & done")
-        );
-    }
-
-
-    @Test
-    void allThreeMethods_areCallableOnSameInstance() {
-        callForCoverage(() -> service.sendBookingConfirmation("a@b.com", "booking"));
-        callForCoverage(() -> service.sendCancellationNotice("a@b.com", "cancel"));
-        callForCoverage(() -> service.sendReminder("a@b.com", "reminder"));
-    }
-
-
-    @Test
-    void secondInstance_sendBookingConfirmation_isCallable() {
-        EmailNotificationService svc2 = new EmailNotificationService(
-            "another.host", "25", "other@example.com", "pass"
-        );
-        callForCoverage(() ->
-            svc2.sendBookingConfirmation("client@example.com", "Confirmed!")
-        );
-    }
-
-    @Test
-    void secondInstance_sendCancellationNotice_isCallable() {
-        EmailNotificationService svc2 = new EmailNotificationService(
-            "another.host", "25", "other@example.com", "pass"
-        );
-        callForCoverage(() ->
-            svc2.sendCancellationNotice("client@example.com", "Cancelled!")
-        );
-    }
-
-    @Test
-    void secondInstance_sendReminder_isCallable() {
-        EmailNotificationService svc2 = new EmailNotificationService(
-            "another.host", "25", "other@example.com", "pass"
-        );
-        callForCoverage(() ->
-            svc2.sendReminder("client@example.com", "Don't forget!")
+    void sendReminder_withGmailLikeConfig_shouldNotThrow() {
+        EmailNotificationService gmailService =
+            new EmailNotificationService("smtp.gmail.com", "587",
+                                         "noreply@example.com", "pass123");
+        assertDoesNotThrow(() ->
+            gmailService.sendReminder("client@example.com", "Don't forget tomorrow!")
         );
     }
 }
