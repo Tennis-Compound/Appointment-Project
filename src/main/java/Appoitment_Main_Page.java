@@ -120,16 +120,20 @@ public class Appoitment_Main_Page {
      * @return the selected menu option
      */
 	private static int showMenu(Scanner input) {
-        System.out.println("\nEnter the number following what you want to do");
-        System.out.println("1- Administrator Login ");
-        System.out.println("2- User Login");
-        System.out.println("3- User Sign up");
-        System.out.println("4- View Available Appointment Slots");
-        System.out.println("0- Exit Program ");
-        int choice = input.nextInt();
-        input.nextLine();
-        return choice;
-    }
+	    System.out.println("\nEnter the number following what you want to do");
+	    System.out.println("1- Administrator Login ");
+	    System.out.println("2- User Login");
+	    System.out.println("3- User Sign up");
+	    System.out.println("4- View Available Appointment Slots");
+	    System.out.println("0- Exit Program ");
+	    if (input.hasNextInt()) {
+	        int choice = input.nextInt();
+	        input.nextLine();
+	        return choice;
+	    }
+	    input.nextLine();
+	    return -1;
+	}
 	
 	/**
      * Handles administrator login.
