@@ -7,62 +7,36 @@
     <groupId>com.example</groupId>
     <artifactId>appointment-system</artifactId>
     <version>1.0-SNAPSHOT</version>
-
+ 
     <properties>
          <sonar.organization>tennis-compound</sonar.organization>
          <sonar.projectKey>Appointment-Project</sonar.projectKey>
          <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-         <maven.compiler.source>11</maven.compiler.source>
-         <maven.compiler.target>11</maven.compiler.target>
+         <maven.compiler.source>17</maven.compiler.source>
+         <maven.compiler.target>17</maven.compiler.target>
          <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
-        <!-- JUnit 5 API (for annotations like @Test) -->
+        <!-- JUnit 5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.8.2</version>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.10.0</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit 5 Engine (to run the tests) -->
+        <!-- Mockito (single consistent version for Java 17) -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.8.2</version>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
-        
-<!-- Mockito Core (Version 5 is required for Java 17, 21+) -->
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-core</artifactId>
-    <version>5.5.0</version>
-    <scope>test</scope>
-</dependency>
-
-<!-- Mockito JUnit Jupiter (Version 5) -->
-<dependency>
-    <groupId>org.mockito</groupId>
-    <artifactId>mockito-junit-jupiter</artifactId>
-    <version>5.5.0</version>
-    <scope>test</scope>
-</dependency>
-
-
-        <!-- Mockito for mocking -->
-        <dependency>
-             <groupId>org.mockito</groupId>
-             <artifactId>mockito-inline</artifactId>
-             <version>4.11.0</version>
-             <scope>test</scope>
-         </dependency>
-        
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>4.11.0</version>
+            <version>5.5.0</version>
             <scope>test</scope>
         </dependency>
         
@@ -94,10 +68,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.11.0</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
             
@@ -105,7 +79,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M7</version>
+                <version>3.1.2</version>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                </configuration>
             </plugin>
 
             <!-- Exec Maven Plugin to run the main application -->
