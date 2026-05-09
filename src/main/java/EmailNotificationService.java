@@ -35,7 +35,7 @@ public class EmailNotificationService implements NotificationService {
     }
     
     private void sendEmail(String toEmail, String subject, String message) {
-        if (to == null || subject == null || body == null) {
+        if (toEmail == null || subject == null || message == null) {
             System.out.println("Cannot send email: null parameters");
             return;
         }
