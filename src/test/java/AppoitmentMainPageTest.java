@@ -159,7 +159,8 @@ public class AppoitmentMainPageTest {
             // ══════════════════════════════════════════════════════════════════════════
         
             private void provideInput(String string) {
-                System.setIn(new java.io.ByteArrayInputStream(string.getBytes()));
+                // TODO Auto-generated method stub
+                throw new UnsupportedOperationException("Unimplemented method 'provideInput'");
             }
         
             @Test
