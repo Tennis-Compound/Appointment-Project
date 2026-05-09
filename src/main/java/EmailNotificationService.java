@@ -35,6 +35,10 @@ public class EmailNotificationService implements NotificationService {
     }
     
     private void sendEmail(String toEmail, String subject, String message) {
+        if (to == null || subject == null || body == null) {
+            System.out.println("Cannot send email: null parameters");
+            return;
+        }
         Properties props = new Properties();
         props.put("mail.smtp.host", smtpHost);
         props.put("mail.smtp.port", smtpPort);
