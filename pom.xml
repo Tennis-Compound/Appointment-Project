@@ -12,48 +12,60 @@
          <sonar.organization>tennis-compound</sonar.organization>
          <sonar.projectKey>Appointment-Project</sonar.projectKey>
          <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-         <!-- Use Java 11 as requested, but compatible with Java 21 runtime -->
          <maven.compiler.source>11</maven.compiler.source>
-         <maven.compiler.target>11</---maven.compiler.target>
+         <maven.compiler.target>11</maven.compiler.target>
          <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-         <!-- Define versions here for consistency -->
-         <junit.version>5.8.2</junit.version>
-         <mockito.version>5.5.0</mockito.version>
     </properties>
 
     <dependencies>
-        <!-- JUnit 5 API -->
+        <!-- JUnit 5 API (for annotations like @Test) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- JUnit 5 Engine -->
+        <!-- JUnit 5 Engine (to run the tests) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         
-        <!-- Mockito Core (Version 5 handles static/final mocking automatically) -->
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency>
+<!-- Mockito Core (Version 5 is required for Java 17, 21+) -->
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-core</artifactId>
+    <version>5.5.0</version>
+    <scope>test</scope>
+</dependency>
 
-        <!-- Mockito JUnit Jupiter Integration -->
+<!-- Mockito JUnit Jupiter (Version 5) -->
+<dependency>
+    <groupId>org.mockito</groupId>
+    <artifactId>mockito-junit-jupiter</artifactId>
+    <version>5.5.0</version>
+    <scope>test</scope>
+</dependency>
+
+
+        <!-- Mockito for mocking -->
+        <dependency>
+             <groupId>org.mockito</groupId>
+             <artifactId>mockito-inline</artifactId>
+             <version>4.11.0</version>
+             <scope>test</scope>
+         </dependency>
+        
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockito.version}</version>
+            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
-
+        
         <!-- Dotenv for environment variables -->
         <dependency>
             <groupId>io.github.cdimascio</groupId>
@@ -61,7 +73,7 @@
             <version>3.0.0</version>
         </dependency>
         
-        <!-- JavaMail API -->
+        <!-- JavaMail API for email sending -->
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>javax.mail</artifactId>
@@ -89,14 +101,14 @@
                 </configuration>
             </plugin>
             
-            <!-- Maven Surefire Plugin (Runs the tests) -->
+            <!-- Maven Surefire Plugin for tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.1.2</version> <!-- Upgraded for better Java 21/JUnit 5 support -->
+                <version>3.0.0-M7</version>
             </plugin>
 
-            <!-- Exec Maven Plugin -->
+            <!-- Exec Maven Plugin to run the main application -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -106,14 +118,13 @@
                 </configuration>
             </plugin>
             
-            <!-- JaCoCo Plugin (Generates the coverage data) -->
+            <!-- JaCoCo Plugin for code coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version> <!-- Upgraded to 0.8.10 for Java 21 support -->
+                <version>0.8.7</version>
                 <executions>
                     <execution>
-                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
@@ -128,24 +139,20 @@
                 </executions>
             </plugin>
             
-            <!-- Sonar Maven Plugin (Uploads results to SonarCloud) -->
             <plugin>
-                <groupId>org.sonarsource.scanner.maven</groupId>
-                <artifactId>sonar-maven-plugin</artifactId>
-                <version>3.9.0.2184</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <goals>
-                            <goal>javadoc</goal>
-                        </goals>
-                        <phase>verify</phase>
-                    </execution>
-                </
-
+                      <groupId>org.apache.maven.plugins</groupId>
+                      <artifactId>maven-javadoc-plugin</artifactId>
+                      <version>3.5.0</version>
+                      <executions>
+                          <execution>
+                              <id>attach-javadocs</id>
+                              <goals>
+                                  <goal>javadoc</goal>
+                              </goals>
+                              <phase>verify</phase>
+                          </execution>
+                      </executions>
+             </plugin>
+        </plugins>
+    </build>
+</project>
