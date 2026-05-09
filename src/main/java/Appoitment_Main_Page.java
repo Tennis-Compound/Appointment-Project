@@ -1,7 +1,7 @@
 import java.util.Scanner;
 import io.github.cdimascio.dotenv.Dotenv;
 import java.sql.*;
-
+import java.util.logging.Logger;
 /**
  * Main class for the Appointment Scheduling System
  * This class handles:
