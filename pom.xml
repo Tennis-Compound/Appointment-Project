@@ -119,34 +119,29 @@
 
             <!-- JaCoCo Coverage -->
             <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>${jacoco.version}</version>
+    <groupId>org.jacoco</groupId>
+    <artifactId>jacoco-maven-plugin</artifactId>
+    <version>0.8.11</version>
 
-                <executions>
+    <executions>
 
-                    <!-- Attach JaCoCo Agent -->
-                    <execution>
-                        <id>prepare-agent</id>
+        <execution>
+            <id>prepare-agent</id>
+            <goals>
+                <goal>prepare-agent</goal>
+            </goals>
+        </execution>
 
-                        <goals>
-                            <goal>prepare-agent</goal>
-                        </goals>
-                    </execution>
+        <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals>
+                <goal>report</goal>
+            </goals>
+        </execution>
 
-                    <!-- Generate Coverage Report -->
-                    <execution>
-                        <id>report</id>
-
-                        <phase>verify</phase>
-
-                        <goals>
-                            <goal>report</goal>
-                        </goals>
-                    </execution>
-
-                </executions>
-            </plugin>
+    </executions>
+</plugin>
 
             <!-- Run Main Application -->
             <plugin>
